@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ntnudavidcb/communication"
+	"github.com/ntnudavidcb/com"
 	"log"
 )
 
@@ -11,7 +11,7 @@ func main() {
 
 	port := ":20010"
 
-	go communication.ListenUdp(port, ipListChannel)
+	go com.ListenUdp(port, ipListChannel)
 
 	log.Println(<-ipListChannel)
 	<-doneChannel
