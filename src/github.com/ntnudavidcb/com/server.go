@@ -15,55 +15,66 @@ func ListenUdp(port string, ipListChannel chan []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer udpListen.Close()
 
-	ipList := make([]string, 0)
+
+	timeStampVar := make(map[string]time.Time)
+	timeStampVar[GetMyIP()] = time.Now().Add(30000*time.Second)
+	timeoutChannel := make(chan bool)
+	go timeout(timeoutChannel)
+	timed := false
+
 	var buffer [1024]byte
-
-	timer := make(chan bool, 1)
-	timeout := false
-
-	go timerout(timer)
-
 	for {
-
+		log.Println(port)
 		_, ipAddr, err := udpListen.ReadFromUDP(buffer[:])
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		if !ipInList(ipAddr.String(), ipList) {
-			ipList = append(ipList, ipAddr.String())
-		}
 		log.Println(string(buffer[0:10]))
 
-		select {
-		case <-timer:
-			timeout = true
+		updateIP(timeStampVar, ipAddr.String())
+		TimeStampCheck(timeStampVar, ipAddr.String())
+
+		log.Println("PC1")
+		time.Sleep(1000 * time.Millisecond)
+
+		select{
+		case <- timeoutChannel:
+			log.Println("Timed out")
+			timed = true
 		default:
 			break
 		}
-		if timeout {
+
+		if timed{
 			break
 		}
-		log.Println("PC1")
-		time.Sleep(1000 * time.Millisecond)
+	}
+	var ipListAlive []string
+	for key, _ := range timeStampVar {
+		ipListAlive = append(ipListAlive, key)
+		log.Println(key)
 	}
 	log.Println("Server ended")
-	ipListChannel <- ipList
+	ipListChannel <- ipListAlive
+	log.Println("SJEKKE DENNE")
 }
 
-func ipInList(ipAddr string, ipList []string) bool {
-	for _, b := range ipList {
-		if b == ipAddr {
-			return true
+func updateIP(list map[string]time.Time, IPAddrs string){
+	list[IPAddrs] = time.Now().Add(2*time.Second)
+}
+
+func timeout(ch chan bool){
+	time.Sleep(5*time.Second)
+	ch <- true
+}
+
+func TimeStampCheck(list map[string]time.Time, MyIP string) {
+		for key, val := range list {
+			if val.Before(time.Now()) && key != MyIP {
+				delete(list, key)
+				break
+			}
 		}
-	}
-	return false
-}
-
-func timerout(timer chan bool) {
-	time.Sleep(10 * time.Second)
-	timer <- true
 }
