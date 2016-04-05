@@ -11,7 +11,7 @@ func main() {
 
 	port := ":20010"
 
-	go com.ListenUdp(port, ipListChannel)
+	go com.Server(port, ipListChannel)
 
 	log.Println(<-ipListChannel)
 	<-doneChannel

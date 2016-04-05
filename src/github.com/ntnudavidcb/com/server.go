@@ -6,38 +6,35 @@ import (
 	"time"
 )
 
-func ListenUdp(port string, ipListChannel chan []string) {
-	udpAddr, err := net.ResolveUDPAddr("udp", port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	udpListen, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer udpListen.Close()
+func Server(port string, ipListChannel chan []string) {
+	
 
 
 	timeStampVar := make(map[string]time.Time)
 	timeStampVar[GetMyIP()] = time.Now().Add(30000*time.Second)
 	timeoutChannel := make(chan bool)
-	go timeout(timeoutChannel)
+	connIPAddrs := make(chan string)
+	msg := make(chan string)
+	connected := make(chan bool)
 	timed := false
 
-	var buffer [1024]byte
-	for {
-		log.Println(port)
-		_, ipAddr, err := udpListen.ReadFromUDP(buffer[:])
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println(string(buffer[0:10]))
+ 	go timeout(timeoutChannel)
+	go connListener(connIPAddrs, msg, connected, port)
 
-		updateIP(timeStampVar, ipAddr.String())
-		TimeStampCheck(timeStampVar, ipAddr.String())
+	for {
+		select{
+		case <-connected:
+			ip := <-connIPAddrs
+			updateIP(timeStampVar, ip)
+			log.Println(<-msg)
+		default:
+			break
+		}
+		
+		TimeStampCheck(timeStampVar) //GetMyIP()
 
 		log.Println("PC1")
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		select{
 		case <- timeoutChannel:
@@ -54,27 +51,52 @@ func ListenUdp(port string, ipListChannel chan []string) {
 	var ipListAlive []string
 	for key, _ := range timeStampVar {
 		ipListAlive = append(ipListAlive, key)
-		log.Println(key)
 	}
-	log.Println("Server ended")
 	ipListChannel <- ipListAlive
-	log.Println("SJEKKE DENNE")
 }
+
+
+func connListener(IPAddrs chan string, msg chan string, connected chan bool, port string){
+	udpAddr, err := net.ResolveUDPAddr("udp", port)
+	if err != nil {
+		log.Fatal(err)
+	}
+	udpListen, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer udpListen.Close()
+
+	var buffer [1024]byte
+
+	for{
+		_, ip, err := udpListen.ReadFromUDP(buffer[:])
+		if err != nil {
+			log.Fatal(err)
+		}
+		connected <- true
+		IPAddrs <- ip.String()
+		msg <- string(buffer[0:10])
+	}
+}
+
+
 
 func updateIP(list map[string]time.Time, IPAddrs string){
 	list[IPAddrs] = time.Now().Add(2*time.Second)
 }
 
 func timeout(ch chan bool){
-	time.Sleep(5*time.Second)
+	time.Sleep(10*time.Second)
 	ch <- true
 }
 
-func TimeStampCheck(list map[string]time.Time, MyIP string) {
-		for key, val := range list {
-			if val.Before(time.Now()) && key != MyIP {
-				delete(list, key)
-				break
-			}
+func TimeStampCheck(list map[string]time.Time) { //MyIP string
+	for key, val := range list {
+		if val.Before(time.Now()){ //&& key != MyIP {
+			log.Println("Found disconnect")
+			delete(list, key)
+			break
 		}
+	}
 }
