@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"time"
+	//"encoding/json"
 )
 
 func BroadcastUdp(addr string) {
@@ -20,7 +21,8 @@ func BroadcastUdp(addr string) {
 	defer udpBroadcast.Close()
 
 	for {
-		udpBroadcast.Write([]byte("Not master"))
+		udpBroadcast.Write(CreateJSON("Alive", "shit", time.Now()))
+
 		time.Sleep(1000 * time.Millisecond)
 		log.Println("Hei")
 	}

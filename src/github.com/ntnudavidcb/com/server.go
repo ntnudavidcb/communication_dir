@@ -7,9 +7,6 @@ import (
 )
 
 func Server(port string, ipListChannel chan []string) {
-	
-
-
 	timeStampVar := make(map[string]time.Time)
 	timeStampVar[GetMyIP()] = time.Now().Add(30000*time.Second)
 	timeoutChannel := make(chan bool)
@@ -67,13 +64,19 @@ func connListener(IPAddrs chan string, msg chan string, connected chan bool, por
 	}
 	defer udpListen.Close()
 
-	var buffer [1024]byte
-
+	//var buffer [1024]byte
+	buffer := make([]byte, 1024)
 	for{
-		_, ip, err := udpListen.ReadFromUDP(buffer[:])
+		lenOfBuffer, ip, err := udpListen.ReadFromUDP(buffer)
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Println(i)
+		var m Message
+		m = DecodeJSON(buffer[:lenOfBuffer])
+		log.Println(m.Name)
+		log.Println(m.Body)
+		log.Println(m.Time)
 		connected <- true
 		IPAddrs <- ip.String()
 		msg <- string(buffer[0:10])
