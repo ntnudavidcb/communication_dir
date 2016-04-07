@@ -18,6 +18,7 @@ func CreateJSON(name string, body string, timeSendt time.Time) []byte {
 	b, err := json.Marshal(m)
 	if err != nil {
 		log.Println("Failed to encode JSON object")
+		log.Fatal(err)
 	}
 	return b
 }
@@ -31,8 +32,8 @@ func DecodeJSON(b []byte) Message {
 	}
 	return m
 }
-func statusUpdater(addr string) {
-	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+func statusUpdater(addr string, port string) {
+	udpAddr, err := net.ResolveUDPAddr("udp", addr+port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,7 +50,7 @@ func statusUpdater(addr string) {
 		udpBroadcast.Write(CreateJSON("Status", elevStatus, time.Now()))
 
 		time.Sleep(1000 * time.Millisecond)
-		log.Println("Hei")
+		log.Println("Status updater")
 	}
 }
 
