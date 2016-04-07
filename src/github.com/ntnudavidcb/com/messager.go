@@ -32,6 +32,8 @@ func DecodeJSON(b []byte) Message {
 	}
 	return m
 }
+
+//SKriver ut paa broadcast at denne maskinen lever, og sender informasjon med
 func statusUpdater(addr string, port string) {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr+port)
 	if err != nil {
