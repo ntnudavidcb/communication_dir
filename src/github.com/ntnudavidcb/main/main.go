@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func testrun() {
-	log.Println(config.ColB, "Test Run Initialized", config.ColN)
+func testrun1() {
+	log.Println(config.ColB, "Test Run 1 Initialized", config.ColN)
 
 	//Etasje 1 ankommet etter init
 	driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_1, 1)
@@ -64,10 +64,40 @@ func testrun() {
 	log.Println(config.ColB, "Test Run Finished", config.ColN)
 }
 
+func testrun2(){
+	log.Println(config.ColC, "Test Run 2 Initialized", config.ColN)
+	var floor int
+
+	for{
+		for driver.Elev_get_floor_sensor_signal() != config.FLOOR_1{
+			driver.Elev_set_motor_direction(config.DIR_DOWN)
+			floor = driver.Elev_get_floor_sensor_signal()
+		}
+		log.Println("Reached 1st floor")
+		driver.Elev_set_motor_direction(config.DIR_STOP)
+		time.Sleep(2000 * time.Millisecond)
+		for driver.Elev_get_floor_sensor_signal() != config.FLOOR_4{
+			driver.Elev_set_motor_direction(config.DIR_UP)
+			floor = driver.Elev_get_floor_sensor_signal()
+			if queue.CheckOrder(floor-1, floor){
+				driver.Elev_set_motor_direction(config.DIR_STOP)
+				time.Sleep(1000 * time.Millisecond)
+				
+			}
+
+		}
+		driver.Elev_set_motor_direction(config.DIR_STOP)
+		log.Println("Reached 4th floor")
+		time.Sleep(2000 * time.Millisecond)
+
+	}
+}
+
 func main() {	
 	asd := make(chan int)
-	driver.Elev_init()
-	go queue.ReadLocalButtons()
+	floor driver.Elev_init()
+	go testrun2()
+	go queue.ReadAllButtons()
 	//testrun()
 	asd <- 1
 }
