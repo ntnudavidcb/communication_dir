@@ -45,7 +45,7 @@ func Elev_init() (int, error) {
 
 	Elev_set_stop_lamp(0)
 	Elev_set_door_open_lamp(0)
-
+	
 	Elev_set_motor_direction(def.DIR_DOWN)
 	floor := Elev_get_floor_sensor_signal()
 	for floor == -1 {

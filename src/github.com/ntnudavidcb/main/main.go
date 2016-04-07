@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/ntnudavidcb/config"
-	"github.com/ntnudavidcb/driver"
+	"../config"
+	"../driver"
+	"../queue"
 	"log"
 	"time"
 )
@@ -64,6 +65,9 @@ func testrun() {
 }
 
 func main() {	
+	asd := make(chan int)
 	driver.Elev_init()
-	testrun()
+	go queue.ReadLocalButtons()
+	//testrun()
+	asd <- 1
 }
