@@ -1,35 +1,11 @@
 package main
 
 import (
-	"../driver"
-	"../config"
-	//"../queue"
+	"github.com/ntnudavidcb/config"
+	"github.com/ntnudavidcb/driver"
 	"log"
 	"time"
 )
-
-func crap_that_was_here_before(){
-	//  FloorChan := make(chan int,1)
-	// ButtonChan :=make(chan Ressurs.MessageFromEvent,4)
-
-	// LightChan :=make(chan Ressurs.ButtonLigth,2)
-	//MotorChan :=make(chan string,1)
-
-	// StatusChan :=make(chan Ressurs.MessageFromEvent,1)
-
-	//FromNetwork :=make(chan Ressurs.MessageFromEvent,1)
-	//ToNetwork :=make(chan Ressurs.MessageFromEvent,1)
-
-	// go elev.DriverInit(ButtonChan, FloorChan,LightChan,MotorChan)
-
-	//go elevator.InitElevatorControl(FromNetwork,StatusChan,FloorChan,LightChan,MotorChan,ToNetwork)
-
-	//go network.MasterSlaveNetwork(StatusChan,ButtonChan,FromNetwork,ToNetwork)
-
-	//for{
-	//    time.Sleep(1e9)
-	//}
-}
 
 func testrun() {
 	log.Println(config.ColB, "Test Run Initialized", config.ColN)
@@ -89,6 +65,5 @@ func testrun() {
 
 func main() {	
 	driver.Elev_init()
-
 	testrun()
 }

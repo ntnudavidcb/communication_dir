@@ -6,7 +6,6 @@ import (
 	def "../config"
 	"log"
 	"errors"
-	"queue"
 )
 
 //Mulig legge alle const-deklarasjoner inn i en config.go
@@ -57,7 +56,6 @@ func Elev_init() (int, error) {
 	Elev_set_floor_indicator(floor)
 
 	log.Println(def.ColG, "Hardware Initialized", def.ColN) 
-	go queue.Queue_add_to_local()
 	return floor, nil
 }
 
