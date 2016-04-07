@@ -87,7 +87,7 @@ func updateIP(list map[string]time.Time, IPAddrs string) {
 }
 
 func timeout(ch chan bool) {
-	time.Sleep(100 * time.Second)
+	time.Sleep(150 * time.Second)
 	ch <- true
 }
 
