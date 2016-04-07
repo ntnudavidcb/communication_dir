@@ -42,10 +42,17 @@ func statusUpdater(addr string) {
 	}
 	defer udpBroadcast.Close()
 
+	var elevStatus string
+
 	for {
-		udpBroadcast.Write(CreateJSON("Alive", "", time.Now()))
+		elevStatus = findElevStatus()
+		udpBroadcast.Write(CreateJSON("Status", elevStatus, time.Now()))
 
 		time.Sleep(1000 * time.Millisecond)
 		log.Println("Hei")
 	}
+}
+
+func findElevStatus() string {
+	return "Ingen hardware informasjon tilgjengelig"
 }

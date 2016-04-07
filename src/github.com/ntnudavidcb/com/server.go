@@ -3,6 +3,7 @@ package com
 import (
 	"log"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,7 @@ func Server(addr string, port string, ipListChannel chan []string) {
 	go statusUpdater(addr)
 
 	for {
+		//Sjekke om noen sier at de er koblet til, oppdaterer IP-listen
 		select {
 		case <-connected:
 			ip := <-connIPAddrs
@@ -64,7 +66,6 @@ func connListener(IPAddrs chan string, msg chan string, connected chan bool, por
 	}
 	defer udpListen.Close()
 
-	//var buffer [1024]byte
 	buffer := make([]byte, 1024)
 	for {
 		lenOfBuffer, ip, err := udpListen.ReadFromUDP(buffer)
@@ -76,16 +77,17 @@ func connListener(IPAddrs chan string, msg chan string, connected chan bool, por
 		log.Println(m.Name)
 		connected <- true
 		IPAddrs <- ip.String()
-		msg <- string(buffer[0:10])
+		msg <- string(buffer)
 	}
 }
 
 func updateIP(list map[string]time.Time, IPAddrs string) {
-	list[IPAddrs] = time.Now().Add(2 * time.Second)
+	IPWithoutPort := strings.Split(IPAddrs, ":")
+	list[IPWithoutPort[0]] = time.Now().Add(2 * time.Second)
 }
 
 func timeout(ch chan bool) {
-	time.Sleep(10 * time.Second)
+	time.Sleep(100 * time.Second)
 	ch <- true
 }
 
