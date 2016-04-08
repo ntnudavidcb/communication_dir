@@ -26,6 +26,8 @@ const (
 	DIR_STOP = 0
 )
 
+
+
 // Colours for printing to console
 const Col0 = "\x1b[30;1m" // Dark grey
 const ColR = "\x1b[31;1m" // Red

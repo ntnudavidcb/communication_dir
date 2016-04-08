@@ -59,16 +59,20 @@ func Elev_init() (int, error) {
 	return floor, nil
 }
 
-func Elev_set_motor_direction(dirn ELEV_MOTOR_DIR) {
+func Elev_set_motor_direction(dirn ELEV_MOTOR_DIR) int {
 	if dirn == 0 {
 		Io_write_analog(MOTOR, 0)
+		return 0
 	} else if dirn > 0 {
 		Io_clear_bit(MOTORDIR)
 		Io_write_analog(MOTOR, 2800)
+		return 1
 	} else if dirn < 0 {
 		Io_set_bit(MOTORDIR)
 		Io_write_analog(MOTOR, 2800)
+		return -1
 	}
+	return 0
 }
 
 func Elev_set_button_lamp(button int, floor int, value int) {
