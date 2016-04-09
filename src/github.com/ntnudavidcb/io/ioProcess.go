@@ -21,52 +21,67 @@ const(
 	CMD_4
 )
 
-type ElevState struct {
+var elevState struct {
 	floor int
 	direction int
 }
 
+var PressedButtons = make(map[int]bool)
 
-
-func ReadAllButtons(PressedButtons map[int]bool){
+func ReadAllButtons(buttonPressed chan bool){
 	for{
 		if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_1){
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_1, 1)
 			PressedButtons[6] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_2){
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_2, 1)
 			PressedButtons[7] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_3){
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_3, 1)
 			PressedButtons[8] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_4){
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_4, 1)
 			PressedButtons[9] = true
-
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_1) {
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_1, 1)
 			PressedButtons[0] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_2){
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_2, 1)
 			PressedButtons[1] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_2){
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_2, 1)
 			PressedButtons[2] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_3){
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_3, 1)
 			PressedButtons[3] = true
+			buttonPressed <- true
+
 		}else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_3){
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_3, 1)
 			PressedButtons[4] = true
+			buttonPressed <- true
 		}else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_4){
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_4, 1)
 			PressedButtons[5] = true
+			buttonPressed <- true
 		}
-		log.Println("Local queue: ", PressedButtons)
+		//log.Println("Local queue: ", PressedButtons)
 	}
 }
 
-func TurnOffLight(elevState *ElevState){
+func SetElevState(floor int, direction int){
+	elevState.floor = floor
+	elevState.direction = direction
+}
+
+func TurnOffLight(){//elevState *ElevState
 	if elevState.direction == config.DIR_UP{
 		driver.Elev_set_button_lamp(config.BTN_UP, elevState.floor, 0)
 		driver.Elev_set_button_lamp(config.BTN_COMMAND, elevState.floor, 0)
@@ -77,13 +92,14 @@ func TurnOffLight(elevState *ElevState){
 }
 
 
-func RemoveFromPressedButtonList(elevState *ElevState, PressedButtons map[int]bool){
-	index1, index2 := convertDirAndFloorToMapIndex(elevState)
+func RemoveFromPressedButtonList(){//elevState *ElevState,
+	index1, index2 := ConvertDirAndFloorToMapIndex()
 	PressedButtons[index1] = false
 	PressedButtons[index2] = false
 }
 
-func convertDirAndFloorToMapIndex(elevState *ElevState) (int, int){
+func ConvertDirAndFloorToMapIndex() (int, int){ //elevState *ElevState
+	log.Println(elevState.floor)
 	if elevState.floor == config.FLOOR_1{
 		return UP_1, CMD_1;
 	}else if elevState.floor == config.FLOOR_2 && elevState.direction == config.DIR_DOWN{
@@ -101,52 +117,78 @@ func convertDirAndFloorToMapIndex(elevState *ElevState) (int, int){
 
 }
 
-func CheckOrder(elevState *ElevState, PressedButtons map[int]bool) bool{
-	index1, index2 := convertDirAndFloorToMapIndex(elevState)
-	return PressedButtons[index2] || PressedButtons[index1]
+func ConvertMapIndexToFloor(mapIndex int) int{
+	if mapIndex == 6{
+		return 0
+	}else if mapIndex == 7{
+		return 1
+	}else if mapIndex == 8{
+		return 2
+	}else if mapIndex == 9{
+		return 3
+	}else if mapIndex > 4{
+		return 3
+	}else if mapIndex >2{
+		return 2
+	}else if mapIndex > 0{
+		return 1
+	}else{
+		return 0
+	}
+}
+
+func floorSignalListener(floorReached chan bool) {
+	for{
+		if -1 != driver.Elev_get_floor_sensor_signal(){
+			floorReached <- true
+		}
+	}
+}
+
+func GetElevState() (int, int){
+	return elevState.floor, elevState.direction
+}
+
+
+func Testrun2(floorReached chan bool, buttonPressed chan bool, nextFloor chan int){
+	for i := 0; i < 10; i++ {
+		PressedButtons[i] = false
+	}
+	
+
+	go ReadAllButtons(buttonPressed)
+	go floorSignalListener(floorReached)
+	log.Println(config.ColC, "Test Run 2 Initialized", config.ColN)
+
+	var nextStopFloor int
+	for{
+		nextStopFloor =<- nextFloor
+		if nextStopFloor == -1{
+			driver.Elev_set_motor_direction(config.DIR_STOP)
+			continue
+		}
+		goTowardsFloor(nextStopFloor)
+	}
+}
+
+func goTowardsFloor(nextFloor int){
+	if nextFloor > elevState.floor{
+		driver.Elev_set_motor_direction(config.DIR_UP)
+	}else if nextFloor < elevState.floor{
+		driver.Elev_set_motor_direction(config.DIR_DOWN)
+	}else{
+		driver.Elev_set_motor_direction(config.DIR_STOP)
+	}
 
 }
 
 
-func Testrun2(){
-	PressedButtons :=make(map[int]bool)
-	for i := 0; i < 10; i++ {
-		PressedButtons[i] = false
-	}
-	var s ElevState
-	go ReadAllButtons(PressedButtons)
-	elevState := &s
-	elevState.direction = config.DIR_UP
-	log.Println(config.ColC, "Test Run 2 Initialized", config.ColN)
 
-	for{
-		for driver.Elev_get_floor_sensor_signal() != config.FLOOR_1{
-			elevState.direction = driver.Elev_set_motor_direction(config.DIR_DOWN)
-			elevState.floor = driver.Elev_get_floor_sensor_signal()
-			if CheckOrder(elevState, PressedButtons){
-				RemoveFromPressedButtonList(elevState, PressedButtons)
-				TurnOffLight(elevState)
-				elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
-				time.Sleep(1000 * time.Millisecond)
-			}
-		}
-		log.Println("Reached 1st floor")
-		elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
-		time.Sleep(1000 * time.Millisecond)
-		for driver.Elev_get_floor_sensor_signal() != config.FLOOR_4{
-			elevState.direction = driver.Elev_set_motor_direction(config.DIR_UP)
-			elevState.floor = driver.Elev_get_floor_sensor_signal()
-			if CheckOrder(elevState, PressedButtons){
-				RemoveFromPressedButtonList(elevState, PressedButtons)
-				TurnOffLight(elevState)
-				elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
-				time.Sleep(1000 * time.Millisecond)
-			}
 
-		}
-		elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
-		log.Println("Reached 4th floor")
-		time.Sleep(1000 * time.Millisecond)
-
-	}
+func WantedFloorReached(){
+	log.Println("JJJJJJAAAAA")
+	RemoveFromPressedButtonList()
+	TurnOffLight()
+	elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
+	time.Sleep(1000 * time.Millisecond)
 }
