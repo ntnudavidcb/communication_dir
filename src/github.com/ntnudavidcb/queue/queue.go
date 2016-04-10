@@ -11,14 +11,15 @@ import (
 
 var localQueue = [10]bool{}
 var costQueue = [10]int{}
+/*Organized as follows: UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, CMD_1, CMD_2, CMD_3,CMD_4*/
 
-func CheckOrder(floor int) bool{ //elevState *ElevState
-	/*index1, index2 := io.ConvertDirAndFloorToMapIndex()
-	return io.PressedButtons[index2] || io.PressedButtons[index1]*/
-	if inLocalQueue(floor){
-		return true
-	}
-	return false
+func CheckOrder() bool{ 
+	buttonPressed1, buttonPressed2 := io.ConvertDirAndFloorToMapIndex()
+	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2){
+}
+
+func inLocalQueue(buttonPressed int) bool{
+	return localQueue[buttonPressed]
 }
 
 func UpdateQueueWithButton(buttonPressed int){
@@ -26,11 +27,16 @@ func UpdateQueueWithButton(buttonPressed int){
 }
 
 func UpdateQueue(buttonPushed int){
+	AddToQueue()
+	updateCostQueue()
+	sortQueue()
+}
+
+func updateCostQueue(){
 	currentFloor, currentDir := io.GetElevState()
 	for button := 0; button < 10; button++ {
 		costQueue[button] = io.CostFunc(currentDir, currentFloor, button)
 	}
-	//nå har costQueue kostnad for: UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, CMD_1, CMD_2, CMD_3,CMD_4
 }
 
 func convertButtonCMD(buttonPressed int) (int, int){
@@ -70,8 +76,3 @@ func GetNextOrder() int{
 		return localQueue[0]
 	}
 }
-
-func inLocalQueue(buttonPressed int) bool{
-	return localQueue[buttonPressed]
-}
-

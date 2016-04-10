@@ -10,11 +10,16 @@ import (
 )
 
 func eventButtonPushed(buttonPushed int) {
-	io.UpdateLights()
+	//io.UpdateLights()
 	queue.UpdateQueue(buttonPushed)
 }
 
-func EventFloorReached() {
+func eventFloorReached() {
+	if queue.CheckOrder() {
+		log.Println("It should have stopped here")
+		io.WantedFloorReached()
+		queue.RemoveFromQueue() //ta inn elevState eller no?)
+	}
 
 }
 
@@ -26,7 +31,7 @@ func getNextInQueue() {
 func main() {
 	asd := make(chan int, 1)
 	floorReached := make(chan bool, 1)
-	buttonPressed := make(chan bool, 1)
+	buttonPressed := make(chan int, 1)
 	nextFloor := make(chan int, 1)
 	//var floor int
 	//var direction int
@@ -40,15 +45,11 @@ func main() {
 	for {
 		select {
 		//Reaction when a button is pressed
-		case <-buttonPressed:
-			queue.AddToQueue() //Variablen er global
+		case varButtonPressed <- buttonPressed:
+			eventButtonPushed(varButtonPressed)
 			//Reaction when a floor is reached
 		case <-floorReached:
-			floor, _ := io.GetElevState()
-			if queue.CheckOrder(floor) { //floor, direction) {
-				log.Println("It should have stopped here")
-				io.WantedFloorReached()
-			}
+			eventFloorReached()
 		default:
 			break
 		}

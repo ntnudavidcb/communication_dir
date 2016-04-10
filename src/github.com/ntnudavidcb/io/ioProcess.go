@@ -28,49 +28,48 @@ var elevState struct {
 
 var PressedButtons = make(map[int]bool)
 
-func ReadAllButtons(buttonPressed chan bool) {
+func ReadAllButtons(buttonPressed chan int) {
 	for {
 		if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_1) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_1, 1)
 			PressedButtons[6] = true
-			buttonPressed <- true
+			buttonPressed <- 6
 		} else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_2) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_2, 1)
 			PressedButtons[7] = true
-			buttonPressed <- true
+			buttonPressed <- 7
 		} else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_3) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_3, 1)
 			PressedButtons[8] = true
-			buttonPressed <- true
+			buttonPressed <- 8
 		} else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_4) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_4, 1)
 			PressedButtons[9] = true
-			buttonPressed <- true
+			buttonPressed <- 9
 		} else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_1) {
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_1, 1)
 			PressedButtons[0] = true
-			buttonPressed <- true
+			buttonPressed <- 0
 		} else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_2) {
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_2, 1)
 			PressedButtons[1] = true
-			buttonPressed <- true
+			buttonPressed <- 1
 		} else if driver.Elev_get_button_signal(config.BTN_UP, config.FLOOR_3) {
 			driver.Elev_set_button_lamp(config.BTN_UP, config.FLOOR_3, 1)
 			PressedButtons[2] = true
-			buttonPressed <- true
+			buttonPressed <- 2
 		} else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_4) {
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_4, 1)
 			PressedButtons[3] = true
-			buttonPressed <- true
-
+			buttonPressed <- 3
 		} else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_3) {
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_3, 1)
 			PressedButtons[4] = true
-			buttonPressed <- true
+			buttonPressed <- 4
 		} else if driver.Elev_get_button_signal(config.BTN_DOWN, config.FLOOR_2) {
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_2, 1)
 			PressedButtons[5] = true
-			buttonPressed <- true
+			buttonPressed <- 5
 		}
 		//log.Println("Local queue: ", PressedButtons)
 	}
@@ -148,7 +147,7 @@ func GetElevState() (int, int) {
 	return elevState.floor, elevState.direction
 }
 
-func Testrun2(floorReached chan bool, buttonPressed chan bool, nextFloor chan int) {
+func Testrun2(floorReached chan bool, buttonPressed chan int, nextFloor chan int) {
 	for i := 0; i < 10; i++ {
 		PressedButtons[i] = false
 	}
