@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"../config"
+	"../config"
 	"../driver"
 	"../io"
 	"../queue"
@@ -11,16 +11,23 @@ import (
 
 func eventButtonPushed(buttonPushed int) {
 	//io.UpdateLights()
-	queue.UpdateQueue(buttonPushed)
+	queue.UpdateQueueWithButton(buttonPushed)
 }
 
 func eventFloorReached() {
+	log.Println("CheckOrder: ", queue.CheckOrder())
 	if queue.CheckOrder() {
 		log.Println("It should have stopped here")
 		io.WantedFloorReached()
-		queue.RemoveFromQueue() //ta inn elevState eller no?)
+		queue.RemoveFromQueue(io.GetPressedButtons())
+		queue.UpdateQueueFloorReached()
 	}
-
+	queue.SortQueue()
+	log.Println("NextOrder: ", queue.GetNextOrder())
+	io.GoToNextFloor(queue.GetNextOrder())
+	if queue.GetNextOrder() == -1 {
+		io.SetElevStateDir(config.DIR_STOP)
+	}
 }
 
 func getNextInQueue() {
@@ -32,20 +39,19 @@ func main() {
 	asd := make(chan int, 1)
 	floorReached := make(chan bool, 1)
 	buttonPressed := make(chan int, 1)
-	nextFloor := make(chan int, 1)
-	//var floor int
-	//var direction int
-	//var NextFloor int
-
+	//nextFloor := make(chan int, 1)
+	var varButtonPressed int
 	driver.Elev_init()
 	io.SetElevState(driver.Elev_get_floor_sensor_signal(), 0)
 	log.Println("Hei")
-	go io.Testrun2(floorReached, buttonPressed, nextFloor)
 
+	io.InitListeners(buttonPressed, floorReached)
+
+	log.Println(config.ColC, "Test Run Initialized", config.ColN)
+	queue.InitQueue()
 	for {
 		select {
-		//Reaction when a button is pressed
-		case varButtonPressed <- buttonPressed:
+		case varButtonPressed = <-buttonPressed:
 			eventButtonPushed(varButtonPressed)
 			//Reaction when a floor is reached
 		case <-floorReached:
@@ -53,7 +59,6 @@ func main() {
 		default:
 			break
 		}
-		nextFloor <- queue.GetNextOrder()
 	}
 	log.Println("FUCK")
 	asd <- 1

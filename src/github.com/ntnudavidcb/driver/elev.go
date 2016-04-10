@@ -4,8 +4,9 @@ package driver
 
 import (
 	def "../config"
-	"log"
 	"errors"
+	"log"
+	"time"
 )
 
 //Mulig legge alle const-deklarasjoner inn i en config.go
@@ -27,7 +28,6 @@ var button_channel_matrix = [def.N_FLOORS][def.N_BUTTONS]int{
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
-
 //Initialized and descends the lift to a defined state (until the lift reaches a floor)
 func Elev_init() (int, error) {
 	if Io_init() == false {
@@ -45,7 +45,7 @@ func Elev_init() (int, error) {
 
 	Elev_set_stop_lamp(0)
 	Elev_set_door_open_lamp(0)
-	
+
 	Elev_set_motor_direction(def.DIR_DOWN)
 	floor := Elev_get_floor_sensor_signal()
 	for floor == -1 {
@@ -55,7 +55,8 @@ func Elev_init() (int, error) {
 	Elev_set_motor_direction(def.DIR_STOP)
 	Elev_set_floor_indicator(floor)
 
-	log.Println(def.ColG, "Hardware Initialized", def.ColN) 
+	log.Println(def.ColG, "Hardware Initialized", def.ColN)
+	time.Sleep(2 * time.Second)
 	return floor, nil
 }
 

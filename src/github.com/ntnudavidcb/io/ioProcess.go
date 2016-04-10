@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	UP_1 int = iota
-	UP_2
-	UP_3
-	DOWN_4
-	DOWN_3
-	DOWN_2
-	CMD_1
-	CMD_2
-	CMD_3
-	CMD_4
+	UP_1   = 0
+	UP_2   = 1
+	UP_3   = 2
+	DOWN_4 = 3
+	DOWN_3 = 4
+	DOWN_2 = 5
+	CMD_1  = 6
+	CMD_2  = 7
+	CMD_3  = 8
+	CMD_4  = 9
 )
 
 var elevState struct {
@@ -30,10 +30,13 @@ var PressedButtons = make(map[int]bool)
 
 func ReadAllButtons(buttonPressed chan int) {
 	for {
+		//log.Println("PressedButtons: ", PressedButtons)
+		//log.Println("ElevState: (floor, dir): ", elevState.floor, elevState.direction)
 		if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_1) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_1, 1)
 			PressedButtons[6] = true
 			buttonPressed <- 6
+
 		} else if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_2) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_2, 1)
 			PressedButtons[7] = true
@@ -80,24 +83,34 @@ func SetElevState(floor int, direction int) {
 	elevState.direction = direction
 }
 
+func SetElevStateDir(direction int) {
+	elevState.direction = direction
+}
+
 func TurnOffLight() { //elevState *ElevState
 	if elevState.direction == config.DIR_UP {
 		driver.Elev_set_button_lamp(config.BTN_UP, elevState.floor, 0)
 		driver.Elev_set_button_lamp(config.BTN_COMMAND, elevState.floor, 0)
+		if elevState.floor == config.FLOOR_4 {
+			driver.Elev_set_button_lamp(config.BTN_DOWN, elevState.floor, 0)
+		}
 	} else if elevState.direction == config.DIR_DOWN {
 		driver.Elev_set_button_lamp(config.BTN_DOWN, elevState.floor, 0)
 		driver.Elev_set_button_lamp(config.BTN_COMMAND, elevState.floor, 0)
+		if elevState.floor == config.FLOOR_1 {
+			driver.Elev_set_button_lamp(config.BTN_UP, elevState.floor, 0)
+		}
 	}
 }
 
 func RemoveFromPressedButtonList() { //elevState *ElevState,
 	index1, index2 := ConvertDirAndFloorToMapIndex()
+	log.Println("Index1, Index2: ", index1, index2)
 	PressedButtons[index1] = false
 	PressedButtons[index2] = false
 }
 
 func ConvertDirAndFloorToMapIndex() (int, int) { //elevState *ElevState
-	log.Println(elevState.floor)
 	if elevState.floor == config.FLOOR_1 {
 		return UP_1, CMD_1
 	} else if elevState.floor == config.FLOOR_2 && elevState.direction == config.DIR_DOWN {
@@ -112,7 +125,6 @@ func ConvertDirAndFloorToMapIndex() (int, int) { //elevState *ElevState
 		return DOWN_4, CMD_4
 	}
 	return -1, -1
-
 }
 
 func ConvertMapIndexToFloor(mapIndex int) int {
@@ -124,11 +136,11 @@ func ConvertMapIndexToFloor(mapIndex int) int {
 		return 2
 	} else if mapIndex == 9 {
 		return 3
-	} else if mapIndex > 4 {
+	} else if mapIndex == 3 {
 		return 3
-	} else if mapIndex > 2 {
+	} else if mapIndex == 2 || mapIndex == 4 {
 		return 2
-	} else if mapIndex > 0 {
+	} else if mapIndex == 1 || mapIndex == 5 {
 		return 1
 	} else {
 		return 0
@@ -138,6 +150,7 @@ func ConvertMapIndexToFloor(mapIndex int) int {
 func floorSignalListener(floorReached chan bool) {
 	for {
 		if -1 != driver.Elev_get_floor_sensor_signal() {
+			elevState.floor = driver.Elev_get_floor_sensor_signal()
 			floorReached <- true
 		}
 	}
@@ -147,41 +160,41 @@ func GetElevState() (int, int) {
 	return elevState.floor, elevState.direction
 }
 
-func Testrun2(floorReached chan bool, buttonPressed chan int, nextFloor chan int) {
+func GoToNextFloor(nextFloor int) {
+	if nextFloor == -1 {
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
+	} else if nextFloor > elevState.floor {
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_UP)
+	} else if nextFloor < elevState.floor {
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_DOWN)
+	} else if nextFloor == elevState.floor && elevState.direction == config.DIR_DOWN {
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_UP)
+	} else if nextFloor == elevState.floor && elevState.direction == config.DIR_UP {
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_DOWN)
+	} else {
+		log.Println("Direction: STOP, in GoToNextFloor, should not happen")
+		elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
+	}
+
+}
+
+func InitListeners(buttonPressed chan int, floorReached chan bool) {
 	for i := 0; i < 10; i++ {
 		PressedButtons[i] = false
 	}
-
 	go ReadAllButtons(buttonPressed)
 	go floorSignalListener(floorReached)
-	log.Println(config.ColC, "Test Run 2 Initialized", config.ColN)
-
-	var nextStopFloor int
-	for {
-		nextStopFloor = <-nextFloor
-		if nextStopFloor == -1 {
-			driver.Elev_set_motor_direction(config.DIR_STOP)
-			continue
-		}
-		goTowardsFloor(nextStopFloor)
-	}
-}
-
-func goTowardsFloor(nextFloor int) {
-	if nextFloor > elevState.floor {
-		driver.Elev_set_motor_direction(config.DIR_UP)
-	} else if nextFloor < elevState.floor {
-		driver.Elev_set_motor_direction(config.DIR_DOWN)
-	} else {
-		driver.Elev_set_motor_direction(config.DIR_STOP)
-	}
-
 }
 
 func WantedFloorReached() {
-	log.Println("JJJJJJAAAAA")
+	log.Println("WantedFloorReached")
 	RemoveFromPressedButtonList()
 	TurnOffLight()
-	elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
+
+	driver.Elev_set_motor_direction(config.DIR_STOP)
 	time.Sleep(1000 * time.Millisecond)
+}
+
+func GetPressedButtons() map[int]bool {
+	return PressedButtons
 }
