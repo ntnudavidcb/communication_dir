@@ -3,28 +3,27 @@ package main
 import (
 	//"../config"
 	"../driver"
-	"../queue"
 	"../io"
+	"../queue"
 	"log"
 	//"time"
 )
 
-func eventButtonPushed(buttonPushed int){
+func eventButtonPushed(buttonPushed int) {
 	io.UpdateLights()
 	queue.UpdateQueue(buttonPushed)
 }
 
-func EventFloorReached(){
-	
+func EventFloorReached() {
+
 }
 
-func getNextInQueue(){
-	
-}
+func getNextInQueue() {
 
+}
 
 //EventManager
-func main() {	
+func main() {
 	asd := make(chan int, 1)
 	floorReached := make(chan bool, 1)
 	buttonPressed := make(chan bool, 1)
@@ -32,22 +31,21 @@ func main() {
 	//var floor int
 	//var direction int
 	//var NextFloor int
-	
 
 	driver.Elev_init()
 	io.SetElevState(driver.Elev_get_floor_sensor_signal(), 0)
 	log.Println("Hei")
 	go io.Testrun2(floorReached, buttonPressed, nextFloor)
 
-	for{
-		select{
-			//Reaction when a button is pressed
-		case <- buttonPressed:
+	for {
+		select {
+		//Reaction when a button is pressed
+		case <-buttonPressed:
 			queue.AddToQueue() //Variablen er global
 			//Reaction when a floor is reached
-		case <- floorReached:
+		case <-floorReached:
 			floor, _ := io.GetElevState()
-			if queue.CheckOrder(floor){//floor, direction) {
+			if queue.CheckOrder(floor) { //floor, direction) {
 				log.Println("It should have stopped here")
 				io.WantedFloorReached()
 			}
@@ -59,5 +57,3 @@ func main() {
 	log.Println("FUCK")
 	asd <- 1
 }
-
-

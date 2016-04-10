@@ -5,10 +5,13 @@ import (
 	//"../driver"
 	//"time"
 	"../io"
+	"../costFunc"
 	"log"
 )
 
 var localQueue = [10]bool{}
+var costQueue = [10]int{}
+
 func CheckOrder(floor int) bool{ //elevState *ElevState
 	/*index1, index2 := io.ConvertDirAndFloorToMapIndex()
 	return io.PressedButtons[index2] || io.PressedButtons[index1]*/
@@ -22,8 +25,12 @@ func UpdateQueueWithButton(buttonPressed int){
 	localQueue[buttonPressed] = true
 }
 
-func UpdateQueue(){
-	//run some cost function here and sort the queue with it
+func UpdateQueue(buttonPushed int){
+	currentFloor, currentDir := io.GetElevState()
+	for button := 0; button < 10; button++ {
+		costQueue[button] = io.CostFunc(currentDir, currentFloor, button)
+	}
+	//nå har costQueue kostnad for: UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, CMD_1, CMD_2, CMD_3,CMD_4
 }
 
 func convertButtonCMD(buttonPressed int) (int, int){
@@ -40,7 +47,6 @@ func convertButtonCMD(buttonPressed int) (int, int){
 		return buttonPressed, buttonPressed
 	}
 }
-
 
 func AddToQueue(){
 	//Dette blir allerede gjort fra IO, noe som skal fikses
