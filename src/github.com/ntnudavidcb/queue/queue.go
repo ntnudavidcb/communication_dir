@@ -18,6 +18,10 @@ var sortedQueue = [6]int{}
 UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, 
 CMD_1, CMD_2, CMD_3,CMD_4*/
 
+func SetMyIP(IP string){
+	costFunc.MyIP = IP
+}
+
 func CheckOrder() bool {
 	buttonPressed1, buttonPressed2 := io.ConvertDirAndFloorToMapIndex()
 	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2)
@@ -82,7 +86,19 @@ func RemoveFromLocalQueue(order int){
 }
 
 func GetNextOrder() int {
-	return sortedQueue[0]
+	for _, button := range sortedQueue{
+		if button == -1{
+			return -1
+		}
+		if costFunc.LowestCostElevator(button){
+			return button
+		}
+	}
+	return -1
+}
+
+func UpdateElevStateMap(name string, direction int, floor int){
+	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction}
 }
 
 func SortQueue() {

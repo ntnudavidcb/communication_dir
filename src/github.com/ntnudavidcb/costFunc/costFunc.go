@@ -18,6 +18,19 @@ const (
 	CMD_4  = 9
 )
 
+const (
+	CMD_BTN = 1
+	OUTSIDE_BTN = 2
+)
+
+type ElevState struct {
+	Floor int
+	Direction int
+}
+
+var ElevStateMap = make(map[string]ElevState) //string = IP
+var MyIP string
+
 const MIN_COST int = 0
 
 func minIntegerFunc(integer1 int, integer2 int) int {
@@ -28,11 +41,39 @@ func minIntegerFunc(integer1 int, integer2 int) int {
 	}
 }
 
-func LowestCostElevator(myDir int, myFloor int, myActive bool, button int) bool {
-	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 {
+func LowestCostElevator(button int) bool {
+	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 || len(ElevStateMap) == 0{
 		return true
+	} else {
+		smallestIPStruct := ElevStateMap[MyIP]
+		smallestIPList := []string{}
+		for IPs, elevState := range ElevStateMap{
+			if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) > CostFunc(elevState.Direction, elevState.Floor, button){
+				smallestIPStruct = elevState
+				smallestIPList = []string{IPs}
+			} else if len(smallestIPList) == 0 {
+				smallestIPList = append(smallestIPList, IPs)
+			} else if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) == CostFunc(elevState.Direction, elevState.Floor, button){
+				smallestIPList = append(smallestIPList, IPs)
+			} 
+		}
+		if len(smallestIPList) == 1 && smallestIPList[0] == MyIP{
+			return true
+		} else if len(smallestIPList) == 1{
+			return false
+		}
+		smallestIP := smallestIPList[0]
+		for i, _ := range smallestIPList {
+			if smallestIP > smallestIPList[i]{
+				smallestIP = smallestIPList[i]
+			}
+		}
+		if smallestIP == MyIP{
+			return true
+		} else{
+			return false
+		}
 	}
-	//Hvis en heis er active så prioriteres den ikke
 	return false
 }
 
@@ -46,7 +87,8 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		[]int{1, 2, 3, 4, 5, 0},
 	}
 
-	//Button equivalents if direction is MOVING
+
+	//Button equivalents if Direction is MOVING
 	buttonEquivalent := button
 	if button == CMD_1 {
 		buttonEquivalent = UP_1
@@ -86,7 +128,7 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		}
 	}
 
-	//Button equivalents if direction is STOP
+	//Button equivalents if Direction is STOP
 	if button == DOWN_2 || button == CMD_2 {
 		buttonEquivalent = UP_2
 	} else if button == DOWN_3 || button == CMD_3 {

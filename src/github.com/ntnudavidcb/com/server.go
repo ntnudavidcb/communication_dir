@@ -7,19 +7,32 @@ import (
 	"time"
 )
 
+
 //Kjorer hele tiden, holder hele nettverkssystemet oppe og styrer hele showet
-func Server(addr string, port string, ipListChannel chan []string) {
+func Server(addr string, port string, ipListChannel chan []string, sendMessage chan Message) {
 	timeStampVar := make(map[string]time.Time) //Holde styr pa timestamps paa IP adressene som blir sendt inn
 	timeoutChannel := make(chan bool)          //En enkel timeout for a teste systemet, fjernes etterhvert
 	connIPAddrs := make(chan string)           //Brukes til a kunne sende IP adresser imellom connListener og selve serveren
 	msgRecieved := make(chan string)           //Meldinger som man har fatt
 	connected := make(chan bool)               //om man er koblet til eller ikke
 	timedOut := false                          //Brukes for a avslutte for lokken i server
+	var msg Message
+
+	udpAddr, err := net.ResolveUDPAddr("udp", addr+port)
+	if err != nil {
+		log.Fatal(err)
+	}
+	udpBroadcast, err := net.DialUDP("udp", nil, udpAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer udpBroadcast.Close()
 
 	//Kjorer et par trader som kjorer ved siden av server, alle kjorer uendelig med unntak av timeout
 	go timeout(timeoutChannel)
 	go connListener(connIPAddrs, msgRecieved, connected, port)
-	go statusUpdater(addr, port)
+	//go StatusUpdater(addr, port)
+
 
 	//for-loop som holder serveren oppe
 	for {
@@ -29,6 +42,8 @@ func Server(addr string, port string, ipListChannel chan []string) {
 			ip := <-connIPAddrs
 			updateIP(timeStampVar, ip)
 			<-msgRecieved
+		case msg= <-sendMessage:
+			udpBroadcast.Write(CreateJSON(msg))
 		default:
 			break
 		}
@@ -92,7 +107,7 @@ func updateIP(list map[string]time.Time, IPAddrWithPort string) {
 }
 
 func timeout(ch chan bool) {
-	time.Sleep(60 * time.Second)
+	time.Sleep(600 * time.Second)
 	ch <- true
 }
 
@@ -113,4 +128,8 @@ func printAliveList(timeStampVar map[string]time.Time) {
 		ipListAlive = append(ipListAlive, key)
 	}
 	log.Println(ipListAlive)
+}
+
+func setUpUDP(addr string, port string){
+	
 }
