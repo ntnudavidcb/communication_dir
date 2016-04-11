@@ -28,6 +28,14 @@ func minIntegerFunc(integer1 int, integer2 int) int {
 	}
 }
 
+func LowestCostElevator(myDir int, myFloor int, myActive bool, button int) bool {
+	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 {
+		return true
+	}
+	//Hvis en heis er active så prioriteres den ikke
+	return false
+}
+
 func CostFunc(currentDir int, currentFloor int, button int) int {
 	costMap := [][]int{
 		[]int{0, 1, 2, 3, 4, 5},

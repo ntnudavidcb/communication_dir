@@ -24,6 +24,7 @@ const (
 var elevState struct {
 	floor     int
 	direction int
+	reserved int
 }
 
 var PressedButtons = make(map[int]bool)
@@ -78,13 +79,18 @@ func ReadAllButtons(buttonPressed chan int) {
 	}
 }
 
-func SetElevState(floor int, direction int) {
+func SetElevState(floor int, direction int, reserved int) {
 	elevState.floor = floor
 	elevState.direction = direction
+	elevState.reserved = reserved
 }
 
 func SetElevStateDir(direction int) {
 	elevState.direction = direction
+}
+
+func SetElevStateReserved(reserved int){
+	elevState.reserved = reserved
 }
 
 func TurnOffLight() { //elevState *ElevState
@@ -156,8 +162,8 @@ func floorSignalListener(floorReached chan bool) {
 	}
 }
 
-func GetElevState() (int, int) {
-	return elevState.floor, elevState.direction
+func GetElevState() (int, int, int) {
+	return elevState.floor, elevState.direction, elevState.reserved
 }
 
 func GoToNextFloor(nextFloor int) {
@@ -175,7 +181,6 @@ func GoToNextFloor(nextFloor int) {
 		log.Println("Direction: STOP, in GoToNextFloor, should not happen")
 		elevState.direction = driver.Elev_set_motor_direction(config.DIR_STOP)
 	}
-
 }
 
 func InitListeners(buttonPressed chan int, floorReached chan bool) {
@@ -187,12 +192,14 @@ func InitListeners(buttonPressed chan int, floorReached chan bool) {
 }
 
 func WantedFloorReached() {
-	log.Println("WantedFloorReached")
+	log.Println(config.ColG, "Wanted Floor Reached",config.ColN)
 	RemoveFromPressedButtonList()
 	TurnOffLight()
 
 	driver.Elev_set_motor_direction(config.DIR_STOP)
-	time.Sleep(1000 * time.Millisecond)
+	driver.Elev_set_door_open_lamp(1)
+	time.Sleep(2000 * time.Millisecond)
+	driver.Elev_set_door_open_lamp(0)
 }
 
 func GetPressedButtons() map[int]bool {

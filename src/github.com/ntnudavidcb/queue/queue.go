@@ -6,19 +6,26 @@ import (
 	//"time"
 	"../costFunc"
 	"../io"
-	"log"
+	//"log"
 )
 
 var localQueue = [10]bool{}
 var costQueue = [10]int{}
 var dummyLocalQueue = [10]bool{}
-var sortedQueue = [4]int{}
+var sortedQueue = [6]int{}
 
-/*Organized as follows: UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, CMD_1, CMD_2, CMD_3,CMD_4*/
+/*Organized as follows: 
+UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, 
+CMD_1, CMD_2, CMD_3,CMD_4*/
 
 func CheckOrder() bool {
 	buttonPressed1, buttonPressed2 := io.ConvertDirAndFloorToMapIndex()
 	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2)
+}
+
+func CheckQueue() bool {
+	buttonPressed1, buttonPressed2 := io.ConvertDirAndFloorToMapIndex()
+	
 }
 
 func inLocalQueue(buttonPressed int) bool {
@@ -47,7 +54,7 @@ func InitQueue() {
 }
 
 func updateCostQueue() {
-	currentFloor, currentDir := io.GetElevState()
+	currentFloor, currentDir, _ := io.GetElevState()
 	for button := 0; button < 10; button++ {
 		costQueue[button] = costFunc.CostFunc(currentDir, currentFloor, button)
 	}
@@ -81,10 +88,10 @@ func GetNextOrder() int {
 
 func SortQueue() {
 	minButton := -1
-	for i := 0; i < 10; i++ {
-		dummyLocalQueue[i] = localQueue[i]
+	for elem := 0; elem < 10; elem++ {
+		dummyLocalQueue[elem] = localQueue[elem]
 	}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 6; i++ {
 		min := 100
 		for j := 0; j < 10; j++ {
 			if dummyLocalQueue[j] {
@@ -97,7 +104,7 @@ func SortQueue() {
 		if minButton != -1 {
 			dummyLocalQueue[minButton] = false
 		}
-		log.Println("MinButton: ", minButton)
+		//log.Println("MinButton: ", minButton)
 		sortedQueue[i] = convertButtonToFloor(minButton)
 	}
 }

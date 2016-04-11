@@ -10,7 +10,6 @@ import (
 )
 
 func eventButtonPushed(buttonPushed int) {
-	//io.UpdateLights()
 	queue.UpdateQueueWithButton(buttonPushed)
 }
 
@@ -27,11 +26,7 @@ func eventFloorReached() {
 	io.GoToNextFloor(queue.GetNextOrder())
 	if queue.GetNextOrder() == -1 {
 		io.SetElevStateDir(config.DIR_STOP)
-	}
-}
-
-func getNextInQueue() {
-
+	} 
 }
 
 //EventManager
@@ -39,10 +34,9 @@ func main() {
 	asd := make(chan int, 1)
 	floorReached := make(chan bool, 1)
 	buttonPressed := make(chan int, 1)
-	//nextFloor := make(chan int, 1)
 	var varButtonPressed int
 	driver.Elev_init()
-	io.SetElevState(driver.Elev_get_floor_sensor_signal(), 0)
+	io.SetElevState(driver.Elev_get_floor_sensor_signal(), 0, -1)
 	log.Println("Hei")
 
 	io.InitListeners(buttonPressed, floorReached)
@@ -53,7 +47,6 @@ func main() {
 		select {
 		case varButtonPressed = <-buttonPressed:
 			eventButtonPushed(varButtonPressed)
-			//Reaction when a floor is reached
 		case <-floorReached:
 			eventFloorReached()
 		default:
