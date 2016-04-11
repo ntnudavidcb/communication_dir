@@ -53,6 +53,6 @@ func main() {
 			break
 		}
 	}
-	log.Println("FUCK")
+	log.Println("Some shit got fucked")
 	asd <- 1
 }

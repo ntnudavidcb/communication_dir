@@ -23,11 +23,6 @@ func CheckOrder() bool {
 	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2)
 }
 
-func CheckQueue() bool {
-	buttonPressed1, buttonPressed2 := io.ConvertDirAndFloorToMapIndex()
-	
-}
-
 func inLocalQueue(buttonPressed int) bool {
 	if buttonPressed == -1 {
 		return false
@@ -80,6 +75,10 @@ func RemoveFromQueue(pressedButtons map[int]bool) {
 	}
 	updateCostQueue()
 	SortQueue()
+}
+
+func RemoveFromLocalQueue(order int){
+	localQueue[order] = false
 }
 
 func GetNextOrder() int {
