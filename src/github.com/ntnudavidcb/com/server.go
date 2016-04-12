@@ -3,133 +3,118 @@ package com
 import (
 	"log"
 	"net"
-	"strings"
 	"time"
 )
 
 
-//Kjorer hele tiden, holder hele nettverkssystemet oppe og styrer hele showet
-func Server(addr string, port string, ipListChannel chan []string, sendMessage chan Message) {
-	timeStampVar := make(map[string]time.Time) //Holde styr pa timestamps paa IP adressene som blir sendt inn
-	timeoutChannel := make(chan bool)          //En enkel timeout for a teste systemet, fjernes etterhvert
-	connIPAddrs := make(chan string)           //Brukes til a kunne sende IP adresser imellom connListener og selve serveren
-	msgRecieved := make(chan string)           //Meldinger som man har fatt
-	connected := make(chan bool)               //om man er koblet til eller ikke
-	timedOut := false                          //Brukes for a avslutte for lokken i server
-	var msg Message
+var myBIP string
+var myIP string
+var port string
 
-	udpAddr, err := net.ResolveUDPAddr("udp", addr+port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	udpBroadcast, err := net.DialUDP("udp", nil, udpAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
+//Kjorer hele tiden, holder hele nettverkssystemet oppe og styrer hele showet
+func Server(ipListChannel chan []string, sendAliveMessage chan Message, msgRecievedChan chan Message) {
+	//connIPAddrsChan := make(chan string)           //Brukes til a kunne sende IP adresser imellom connListener og selve serveren
+	//connectedChan := make(chan bool)               //om man er koblet til eller ikke
+	port = "20010"
+	myIP = GetMyIP()
+	myBIP = GetBIP(myIP)
+
+	udpBroadcast := getUDPcon()
+	
 	defer udpBroadcast.Close()
 
 	//Kjorer et par trader som kjorer ved siden av server, alle kjorer uendelig med unntak av timeout
-	go timeout(timeoutChannel)
-	go connListener(connIPAddrs, msgRecieved, connected, port)
-	//go StatusUpdater(addr, port)
-
+	go connListener(msgRecievedChan) //connIPAddrsChan, , connectedChan, port
 
 	//for-loop som holder serveren oppe
 	for {
-		//Sjekke om noen sier at de er koblet til, oppdaterer IP-listen, faa melding/msg
-		select {
-		case <-connected:
-			ip := <-connIPAddrs
-			updateIP(timeStampVar, ip)
-			<-msgRecieved
-		case msg= <-sendMessage:
+		select {		
+		case msg := <-sendAliveMessage:
 			udpBroadcast.Write(CreateJSON(msg))
 		default:
 			break
 		}
 
-		TimeStampCheck(timeStampVar) //GetMyIP()
-
-		printAliveList(timeStampVar)
 		time.Sleep(500 * time.Millisecond)
-
-		select {
-		case <-timeoutChannel:
-			log.Println("Timed out")
-			timedOut = true
-		default:
-			break
-		}
-
-		if timedOut {
-			break
-		}
 	}
-
-	var ipListAlive []string
-	for key, _ := range timeStampVar {
-		ipListAlive = append(ipListAlive, key)
-	}
-	ipListChannel <- ipListAlive
 }
 
 //Lytter etter koblinger, faar tak i meldingen og IP for saa aa sende dette videre
-func connListener(IPAddrs chan string, msgContainer chan string, connected chan bool, port string) {
-	udpAddr, err := net.ResolveUDPAddr("udp", port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	udpListen, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
+func connListener(msgRecievedChan chan Message){ //connectedChan chan bool) { IPAddrs chan string,
+	udpListen := getUDPconListener()
+
 	defer udpListen.Close()
 
 	buffer := make([]byte, 1024)
 	for {
-		lenOfBuffer, addressFromReciever, err := udpListen.ReadFromUDP(buffer)
+		lenOfBuffer, _, err := udpListen.ReadFromUDP(buffer)
 		if err != nil {
 			log.Fatal(err)
 		}
-		//var m Message
 		//DecodeJSON returnerer en struct message av meldingen
-		_ = DecodeJSON(buffer[:lenOfBuffer]) //&m)
-		connected <- true
-		IPAddrs <- addressFromReciever.String()
-		msgContainer <- string(buffer)
+		msg := DecodeJSON(buffer[:lenOfBuffer]) //&m)
+
+		//connectedChan <- true
+		//IPAddrs <- msg.Name
+		msgRecievedChan <- msg
 	}
 }
 
 //Oppdaterer IP-listen med den IP'en som sendes inn
-func updateIP(list map[string]time.Time, IPAddrWithPort string) {
-	IPAddrWithoutPort := strings.Split(IPAddrWithPort, ":")
-	list[IPAddrWithoutPort[0]] = time.Now().Add(2 * time.Second)
-}
-
-func timeout(ch chan bool) {
-	time.Sleep(600 * time.Second)
-	ch <- true
+func updateIP(timeStampMap map[string]time.Time, IPAddr string) {
+	timeStampMap[IPAddr] = time.Now().Add(5 * time.Second)
 }
 
 //Sjekker om timeStampen er good, ellers fjerner den IP adressen, bor fikse denne funksjonen etterhvert
-func TimeStampCheck(list map[string]time.Time) { //MyIP string
-	for key, val := range list {
+func timeStampCheck(timeStampMap map[string]time.Time) { //MyIP string
+
+	for key, val := range timeStampMap {
 		if val.Before(time.Now()) { //&& key != MyIP {
 			log.Println("Found disconnect")
-			delete(list, key)
-			break
+			delete(timeStampMap, key)
 		}
 	}
 }
 
-func printAliveList(timeStampVar map[string]time.Time) {
+func printAliveList(timeStampChan map[string]time.Time) {
 	var ipListAlive []string
-	for key, _ := range timeStampVar {
+	for key, _ := range timeStampChan {
 		ipListAlive = append(ipListAlive, key)
 	}
 	log.Println(ipListAlive)
 }
 
-func setUpUDP(addr string, port string){
-	
+func getUDPconListener() *net.UDPConn{
+	udpAddr, err := net.ResolveUDPAddr("udp", ":"+port)
+	if err != nil {
+		log.Println("connListener failed")
+		log.Fatal(err)
+	}
+	log.Println(udpAddr)
+	udpListen, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		log.Println("connListener failed")
+		log.Fatal(err)
+	}
+	return udpListen
+}
+
+func getUDPcon() *net.UDPConn{
+    serverAddr, err := net.ResolveUDPAddr("udp",myBIP+":"+port)
+    if err != nil {
+            log.Println("getUDPcon failed")
+            log.Fatal(err)
+    }
+    con, err := net.DialUDP("udp", nil, serverAddr)
+    if err != nil {
+            log.Println("getUDPcon failed")
+            log.Fatal(err)
+    }
+    return con
+}
+
+func CheckDisconnection(timeStampMap map[string]time.Time, messageStruct Message){
+	updateIP(timeStampMap, messageStruct.Name)
+	timeStampCheck(timeStampMap)
+	printAliveList(timeStampMap)
 }

@@ -1,9 +1,5 @@
 package config
 
-import (
-	//"os/exec"
-)
-
 const N_FLOORS = 4
 const N_BUTTONS = 3
 
@@ -26,7 +22,18 @@ const (
 	DIR_STOP = 0
 )
 
-
+const (
+	UP_1   = 0
+	UP_2   = 1
+	UP_3   = 2
+	DOWN_4 = 3
+	DOWN_3 = 4
+	DOWN_2 = 5
+	CMD_1  = 6
+	CMD_2  = 7
+	CMD_3  = 8
+	CMD_4  = 9
+)
 
 // Colours for printing to console
 const Col0 = "\x1b[30;1m" // Dark grey

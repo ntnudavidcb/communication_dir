@@ -41,9 +41,9 @@ func minIntegerFunc(integer1 int, integer2 int) int {
 	}
 }
 
-func LowestCostElevator(button int) bool {
+func LowestCostElevator(button int) (bool, int) {
 	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 || len(ElevStateMap) == 0{
-		return true
+		return true, CMD_BTN
 	} else {
 		smallestIPStruct := ElevStateMap[MyIP]
 		smallestIPList := []string{}
@@ -58,9 +58,9 @@ func LowestCostElevator(button int) bool {
 			} 
 		}
 		if len(smallestIPList) == 1 && smallestIPList[0] == MyIP{
-			return true
+			return true, OUTSIDE_BTN
 		} else if len(smallestIPList) == 1{
-			return false
+			return false, -1
 		}
 		smallestIP := smallestIPList[0]
 		for i, _ := range smallestIPList {
@@ -69,12 +69,12 @@ func LowestCostElevator(button int) bool {
 			}
 		}
 		if smallestIP == MyIP{
-			return true
+			return true, OUTSIDE_BTN
 		} else{
-			return false
+			return false, -1
 		}
 	}
-	return false
+	return false, -1
 }
 
 func CostFunc(currentDir int, currentFloor int, button int) int {
@@ -86,7 +86,9 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		[]int{2, 3, 4, 5, 0, 1},
 		[]int{1, 2, 3, 4, 5, 0},
 	}
-
+	//log.Println("currentDir: ", currentDir)
+	//log.Println("currentFloor: ", currentFloor)
+	//log.Println("button: ", button)
 
 	//Button equivalents if Direction is MOVING
 	buttonEquivalent := button
