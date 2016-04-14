@@ -166,7 +166,9 @@ func StopAtFloorReached() {
 	//log.Println(config.ColG, "Wanted Floor Reached",config.ColN)
 	//log.Println(config.ColG, "PressedButtons: ", PressedButtons  ,config.ColN)
 	RemoveFromPressedButtonList()
-	elevState.floor = driver.Elev_get_floor_sensor_signal()
+	if driver.Elev_get_floor_sensor_signal() != -1{
+		elevState.floor = driver.Elev_get_floor_sensor_signal()
+	}
 	TurnOffLight()
 
 	driver.Elev_set_motor_direction(config.DIR_STOP)

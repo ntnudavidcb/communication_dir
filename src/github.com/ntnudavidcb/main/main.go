@@ -23,22 +23,29 @@ func eventButtonPushed(buttonPushed int) {
 }
 
 func eventMessageRecieved(messageStruct com.Message, timeStampMap map[string]time.Time){
-	if messageStruct.Name == com.GetMyIP(){
-		return
-	}else if messageStruct.ButtonPushed != -1 {
+	if messageStruct.ButtonPushed != -1 {
 		queue.UpdateQueueWithButton(messageStruct.ButtonPushed)
 	}
+	if messageStruct.Floor == -1{
+		return
+	}
+	log.Println("messageStruct in eventMessageRecieved", messageStruct)
 	queue.UpdateElevStateMap(messageStruct.Name, messageStruct.Direction, messageStruct.Floor)
+	queue.UpdateLocalQueue(messageStruct.Direction, messageStruct.Floor)
 	com.CheckDisconnection(timeStampMap, messageStruct)
 }
 
 func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 	//log.Println("CheckOrder: ", queue.CheckOrder())
 	queue.UpdateElevStateMap(com.GetMyIP(), io.GetElevStateDir(), io.GetElevStateFloor())
-	if queue.CheckOrder() {
+	if queue.CheckOrder() && io.GetElevStateFloor() != -1{
 		io.StopAtFloorReached()
 		queue.RemoveFromQueue(io.GetPressedButtons())
-		queue.UpdateQueueFloorReached()
+		//msg := com.Message{com.GetMyIP(), buttonPushed,floor, direction, reserved, time.Now()}
+		//com.SendMessage(msg)
+		//queue.UpdateQueueFloorReached()
+	} else if queue.EmptyQueue() == -1{
+		io.SetElevStateDir(0)
 	}
 
 	queue.SortQueue()
@@ -49,13 +56,13 @@ func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 	}
 	log.Println("Button to  GoToNextFloor: " , converter.ConvertButtonToFloor(button))
 	io.GoToNextFloor(converter.ConvertButtonToFloor(button))
-	if button == -1 {
-		io.SetElevStateDir(config.DIR_UP)
-	}
 
 	select{
 	case <-timer:
 		floor, direction, reserved := io.GetElevState()
+		if floor == -1{
+			break
+		}
 		m := com.Message{com.GetMyIP(), -1, floor, direction, reserved, time.Now()}
 		sendAliveMessage <- m
 		go timerCount(timer)
@@ -112,8 +119,10 @@ func main() {
 		case varButtonPressed := <-buttonPressed:
 			eventButtonPushed(varButtonPressed)
 		case msg := <- messageRecieved:
+			log.Println("Message recieved")
 			eventMessageRecieved(msg, timeStampMap)
 		case <-floorReached:
+			log.Println("Floor reached")
 			eventFloorReached(sendAliveMessage, timer)
 		default:
 			break

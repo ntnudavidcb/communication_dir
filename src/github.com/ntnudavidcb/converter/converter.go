@@ -2,7 +2,6 @@ package converter
 
 import (
 	"../config"
-	"log"
 )
 
 func ConvertDirAndFloorToMapIndex(floor int, direction int) (int, int) { //elevState *ElevState
@@ -12,14 +11,17 @@ func ConvertDirAndFloorToMapIndex(floor int, direction int) (int, int) { //elevS
 		return config.DOWN_2, config.CMD_2
 	} else if floor == config.FLOOR_2 && direction == config.DIR_UP {
 		return config.UP_2, config.CMD_2
+	} else if floor == config.FLOOR_2 && direction == config.DIR_STOP {
+		return config.UP_2, config.DOWN_2
 	} else if floor == config.FLOOR_3 && direction == config.DIR_DOWN {
 		return config.DOWN_3, config.CMD_3
 	} else if floor == config.FLOOR_3 && direction == config.DIR_UP {
 		return config.UP_3, config.CMD_3
+	} else if floor == config.FLOOR_2 && direction == config.DIR_STOP {
+		return config.UP_3, config.DOWN_3
 	} else if floor == config.FLOOR_4 {
 		return config.DOWN_4, config.CMD_4
 	}
-	log.Println("elevState: ", floor, direction)
 	return -1, -1
 }
 

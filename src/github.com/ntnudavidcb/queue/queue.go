@@ -4,6 +4,7 @@ import (
 	"../costFunc"
 	"../converter"
 	"log"
+	"../config"
 )
 
 var localQueue = [10]bool{}
@@ -21,8 +22,8 @@ func SetMyIP(IP string){
 
 func CheckOrder() bool {
 	buttonPressed1, buttonPressed2 := converter.ConvertDirAndFloorToMapIndex(costFunc.ElevStateMap[costFunc.MyIP].Floor, costFunc.ElevStateMap[costFunc.MyIP].Direction)
-	log.Println("Buttonpressed1, buttonPressed2: ", buttonPressed1, buttonPressed2)
-	log.Println("CheckOrder: ", inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2))
+	//log.Println("Buttonpressed1, buttonPressed2: ", buttonPressed1, buttonPressed2)
+	//log.Println("CheckOrder: ", inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2))
 	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2)
 }
 
@@ -30,8 +31,8 @@ func inLocalQueue(buttonPressed int) bool {
 	if buttonPressed == -1 {
 		return false
 	}
-	log.Println("localQueue: ", localQueue)
-	log.Println("inLocalQueue: ", localQueue[buttonPressed])
+	//log.Println("localQueue: ", localQueue)
+	//log.Println("inLocalQueue: ", localQueue[buttonPressed])
 	return localQueue[buttonPressed]
 }
 
@@ -50,12 +51,16 @@ func UpdateQueueFloorReached() {
 }
 
 func updateCostQueue() {
-	//currentFloor, currentDir, _ := io.GetElevState()
 	currentFloor := costFunc.ElevStateMap[costFunc.MyIP].Floor
 	currentDir := costFunc.ElevStateMap[costFunc.MyIP].Direction
 	for button := 0; button < 10; button++ {
 		costQueue[button] = costFunc.CostFunc(currentDir, currentFloor, button)
 	}
+}
+
+func UpdateLocalQueue(direction int, floor int){
+	buttonPressed1, _ := converter.ConvertDirAndFloorToMapIndex(floor, direction)
+	localQueue[buttonPressed1] = false
 }
 
 func RemoveFromQueue(pressedButtons map[int]bool) {
@@ -86,6 +91,7 @@ func GetNextOrder() (int, int) {
 
 func UpdateElevStateMap(name string, direction int, floor int){
 	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction}
+	log.Println(config.ColB, "UpdateElevStateMap: (name, floor, direction): ", name, floor, direction, config.ColN)
 }
 
 func SortQueue() {
@@ -108,6 +114,10 @@ func SortQueue() {
 		}
 		sortedQueue[i] = minButton
 	}
-	//log.Println(config.ColC, "SortQueue; sortedQueue: ", sortedQueue, config.ColN)
+	log.Println(config.ColC, "SortQueue; sortedQueue: ", sortedQueue, config.ColN)
 	//log.Println(config.ColG, "SortQueue; localQueue: ", localQueue, config.ColN)
+}
+ 
+func EmptyQueue() int{
+	return sortedQueue[0]
 }

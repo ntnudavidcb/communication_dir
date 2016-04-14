@@ -86,9 +86,9 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		[]int{2, 3, 4, 5, 0, 1},
 		[]int{1, 2, 3, 4, 5, 0},
 	}
-	//log.Println("currentDir: ", currentDir)
-	//log.Println("currentFloor: ", currentFloor)
-	//log.Println("button: ", button)
+	log.Println("currentDir: ", currentDir)
+	log.Println("currentFloor: ", currentFloor)
+	log.Println("button: ", button)
 
 	//Button equivalents if Direction is MOVING
 	buttonEquivalent := button
@@ -127,6 +127,13 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 				return costMap[4][minIntegerFunc(UP_3, DOWN_3)]
 			}
 			return costMap[4][buttonEquivalent]
+		} else if currentFloor == config.FLOOR_4 {
+			if button == CMD_2 {
+				return costMap[config.FLOOR_4][minIntegerFunc(UP_2, DOWN_2)]
+			} else if button == CMD_3 {
+				return costMap[config.FLOOR_4][minIntegerFunc(UP_3, DOWN_3)]
+			}
+			return costMap[config.FLOOR_4][buttonEquivalent]
 		}
 	}
 

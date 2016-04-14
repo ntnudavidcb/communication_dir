@@ -54,9 +54,9 @@ func connListener(msgRecievedChan chan Message){ //connectedChan chan bool) { IP
 		//DecodeJSON returnerer en struct message av meldingen
 		msg := DecodeJSON(buffer[:lenOfBuffer]) //&m)
 
-		//connectedChan <- true
-		//IPAddrs <- msg.Name
-		msgRecievedChan <- msg
+		if msg.Name != GetMyIP(){
+			msgRecievedChan <- msg
+		}
 	}
 }
 
