@@ -12,7 +12,8 @@ type Message struct {
 	ButtonPushed int	
 	Floor int			
 	Direction int		
-	Reserved int		
+	Reserved int
+	OrderTaken int		
 	Time time.Time
 }
 
@@ -40,6 +41,5 @@ func SendMessage(msg Message){
 	udpCon := getUDPcon()
 	defer udpCon.Close()
 	udpCon.Write(CreateJSON(msg))
-
 }
 

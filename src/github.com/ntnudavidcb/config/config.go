@@ -4,6 +4,7 @@ const N_FLOORS = 4
 const N_BUTTONS = 3
 
 const (
+	NOT_ANY_FLOOR = -1
 	FLOOR_1 = 0
 	FLOOR_2 = 1
 	FLOOR_3 = 2
@@ -23,6 +24,7 @@ const (
 )
 
 const (
+	NOT_ANY_BUTTON = -1
 	UP_1   = 0
 	UP_2   = 1
 	UP_3   = 2

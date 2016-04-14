@@ -3,6 +3,8 @@ package costFunc
 import (
 	"../config"
 	"log"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -64,7 +66,9 @@ func LowestCostElevator(button int) (bool, int) {
 		}
 		smallestIP := smallestIPList[0]
 		for i, _ := range smallestIPList {
-			if smallestIP > smallestIPList[i]{
+			str1, _ := strconv.Atoi(strings.Split(smallestIP, ".")[3])
+			str2, _ := strconv.Atoi(strings.Split(smallestIPList[i], ".")[3])
+			if str1 > str2{
 				smallestIP = smallestIPList[i]
 			}
 		}
@@ -86,9 +90,9 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		[]int{2, 3, 4, 5, 0, 1},
 		[]int{1, 2, 3, 4, 5, 0},
 	}
-	log.Println("currentDir: ", currentDir)
-	log.Println("currentFloor: ", currentFloor)
-	log.Println("button: ", button)
+	//log.Println("currentDir: ", currentDir)
+	//log.Println("currentFloor: ", currentFloor)
+	//log.Println("button: ", button)
 
 	//Button equivalents if Direction is MOVING
 	buttonEquivalent := button

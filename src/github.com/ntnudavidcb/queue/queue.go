@@ -20,34 +20,39 @@ func SetMyIP(IP string){
 	costFunc.MyIP = IP
 }
 
-func CheckOrder() bool {
-	buttonPressed1, buttonPressed2 := converter.ConvertDirAndFloorToMapIndex(costFunc.ElevStateMap[costFunc.MyIP].Floor, costFunc.ElevStateMap[costFunc.MyIP].Direction)
-	//log.Println("Buttonpressed1, buttonPressed2: ", buttonPressed1, buttonPressed2)
-	//log.Println("CheckOrder: ", inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2))
-	return inLocalQueue(buttonPressed1) || inLocalQueue(buttonPressed2)
+func CheckOrder(floor int, direction int) bool {
+	buttonUp, buttonDown, buttonCMD := converter.ConvertDirAndFloorToMapIndex(floor, direction) //costFunc.ElevStateMap[costFunc.MyIP].Floor, costFunc.ElevStateMap[costFunc.MyIP].Direction
+	log.Println("CheckOrder: buttonUp, buttonDown, buttonCMD: ", buttonUp, buttonDown, buttonCMD)
+	log.Println("CheckOrder: localQueue: ", localQueue)
+	return inLocalQueue(buttonUp) || inLocalQueue(buttonDown) || inLocalQueue(buttonCMD)
+}
+
+func CheckUpOrDownButton() int{
+	buttonUp, buttonDown, _ := converter.ConvertDirAndFloorToMapIndex(costFunc.ElevStateMap[costFunc.MyIP].Floor, costFunc.ElevStateMap[costFunc.MyIP].Direction)
+	log.Println("CheckUpOrDownButton: Up, down: ", buttonUp, buttonDown)
+	if inLocalQueue(buttonUp){
+		return config.BTN_UP
+	} else if inLocalQueue(buttonDown){
+		return config.BTN_DOWN
+	} else{
+		return config.BTN_COMMAND
+	}
 }
 
 func inLocalQueue(buttonPressed int) bool {
 	if buttonPressed == -1 {
 		return false
 	}
-	//log.Println("localQueue: ", localQueue)
-	//log.Println("inLocalQueue: ", localQueue[buttonPressed])
 	return localQueue[buttonPressed]
 }
 
-func UpdateQueueWithButton(buttonPressed int) {
+func AddButtonToQueue(buttonPressed int) {
 	localQueue[buttonPressed] = true
 }
 
-func UpdateQueueButtonPushed(buttonPushed int) { //Brukes ikke
-	UpdateQueueWithButton(buttonPushed)
+func UpdateQueue() {
 	updateCostQueue()
-	SortQueue()
-}
-func UpdateQueueFloorReached() {
-	updateCostQueue()
-	SortQueue()
+	sortQueue()
 }
 
 func updateCostQueue() {
@@ -58,12 +63,15 @@ func updateCostQueue() {
 	}
 }
 
-func UpdateLocalQueue(direction int, floor int){
-	buttonPressed1, _ := converter.ConvertDirAndFloorToMapIndex(floor, direction)
-	localQueue[buttonPressed1] = false
+func RemoveButtonFromQueue(button int){
+	if button == config.NOT_ANY_BUTTON{
+		return
+	}
+	localQueue[button] = false
 }
 
-func RemoveFromQueue(pressedButtons map[int]bool) {
+//Rar funksjon
+func SynchronizeQueueWithIO(pressedButtons map[int]bool) {
 	for key, _ := range pressedButtons {
 		localQueue[key] = pressedButtons[key]
 	}
@@ -89,19 +97,20 @@ func GetNextOrder() (int, int) {
 	return -1, -1
 }
 
-func UpdateElevStateMap(name string, direction int, floor int){
+func UpdateElevStateMap(name string, floor int, direction int){
 	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction}
 	log.Println(config.ColB, "UpdateElevStateMap: (name, floor, direction): ", name, floor, direction, config.ColN)
 }
 
-func SortQueue() {
-	minButton := -1
-	for elem := 0; elem < 10; elem++ {
+func sortQueue() {
+	log.Println("sortQueue: localQueue: ", localQueue)
+	minButton := config.NOT_ANY_BUTTON
+	for elem := 0; elem < config.CMD_4+1; elem++ {
 		dummyLocalQueue[elem] = localQueue[elem]
 	}
-	for i := 0; i < 10; i++ {
-		min := 100
-		for j := 0; j < 10; j++ {
+	for i := config.UP_1; i < config.CMD_4+1; i++ {
+		min := 100 //Setter en høy cost
+		for j := config.UP_1; j < config.CMD_4+1; j++ {
 			if dummyLocalQueue[j] {
 				if min > costQueue[j] {
 					min = costQueue[j]
@@ -109,15 +118,18 @@ func SortQueue() {
 				}
 			}
 		}
-		if minButton != -1 {
+		if minButton != config.NOT_ANY_BUTTON {
 			dummyLocalQueue[minButton] = false
 		}
 		sortedQueue[i] = minButton
+		minButton = config.NOT_ANY_BUTTON
 	}
 	log.Println(config.ColC, "SortQueue; sortedQueue: ", sortedQueue, config.ColN)
-	//log.Println(config.ColG, "SortQueue; localQueue: ", localQueue, config.ColN)
 }
  
-func EmptyQueue() int{
-	return sortedQueue[0]
+func EmptyQueue() bool{
+	if sortedQueue[0] == -1{
+		return true
+	}
+	return false
 }

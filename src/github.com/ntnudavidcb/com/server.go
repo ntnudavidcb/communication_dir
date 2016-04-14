@@ -27,15 +27,9 @@ func Server(ipListChannel chan []string, sendAliveMessage chan Message, msgRecie
 	go connListener(msgRecievedChan) //connIPAddrsChan, , connectedChan, port
 
 	//for-loop som holder serveren oppe
-	for {
-		select {		
-		case msg := <-sendAliveMessage:
-			udpBroadcast.Write(CreateJSON(msg))
-		default:
-			break
-		}
-
-		time.Sleep(500 * time.Millisecond)
+	for {	
+		msg := <-sendAliveMessage
+		udpBroadcast.Write(CreateJSON(msg))
 	}
 }
 
@@ -62,7 +56,7 @@ func connListener(msgRecievedChan chan Message){ //connectedChan chan bool) { IP
 
 //Oppdaterer IP-listen med den IP'en som sendes inn
 func updateIP(timeStampMap map[string]time.Time, IPAddr string) {
-	timeStampMap[IPAddr] = time.Now().Add(5 * time.Second)
+	timeStampMap[IPAddr] = time.Now().Add(6 * time.Second)
 }
 
 //Sjekker om timeStampen er good, ellers fjerner den IP adressen, bor fikse denne funksjonen etterhvert
@@ -116,5 +110,5 @@ func getUDPcon() *net.UDPConn{
 func CheckDisconnection(timeStampMap map[string]time.Time, messageStruct Message){
 	updateIP(timeStampMap, messageStruct.Name)
 	timeStampCheck(timeStampMap)
-	printAliveList(timeStampMap)
+	//printAliveList(timeStampMap)
 }
