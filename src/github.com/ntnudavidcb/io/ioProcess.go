@@ -92,6 +92,10 @@ func SetElevState(floor int, direction int, reserved int) {
 	elevState.reserved = reserved
 }
 
+func SetElevStateFloor(floor int){
+	elevState.floor = floor
+}
+
 func SetElevStateDir(direction int) {
 	elevState.direction = direction
 }
@@ -169,6 +173,16 @@ func GetElevStateFloor() int {
 
 func GetElevStateDir() int {
 	return elevState.direction
+}
+
+func GetElevStateReserved() int{
+	return elevState.reserved
+}
+
+func InitElevState(floor int){
+	elevState.floor = floor
+	elevState.direction = config.DIR_STOP
+	elevState.reserved = config.NOT_ANY_BUTTON
 }
 
 func GoToNextFloor(nextFloor int) {

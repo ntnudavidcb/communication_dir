@@ -70,6 +70,15 @@ func RemoveButtonFromQueue(button int){
 	localQueue[button] = false
 }
 
+func InitQueue(){
+	for i := 0; i < 10; i++ {
+		costQueue[i] = -1
+	}
+	for i := 0; i < 10; i++ {
+		sortedQueue[i] = -1
+	}
+}
+
 //Rar funksjon
 func SynchronizeQueueWithIO(pressedButtons map[int]bool) {
 	for key, _ := range pressedButtons {

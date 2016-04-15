@@ -22,6 +22,8 @@ func initElevator(buttonPressed chan int, floorReached chan bool) {
 	io.SetElevState(floor, config.DIR_STOP, config.NOT_ANY_BUTTON)
 	initMyIP()
 	initElevStateMap(floor)
+	io.InitElevState(floor)
+	queue.InitQueue()
 	//io.InitButtonAndFloorListeners(buttonPressed, floorReached)
 }
 
@@ -76,32 +78,56 @@ func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 		break
 	}
 	floor, direction, reserved := io.GetElevState()
+
 	if queue.CheckOrder(floor, direction){
-		//79 flyttet herifra
 		log.Println("Direction: ", direction)
+		orderTaken := config.NOT_ANY_BUTTON
 		if queue.CheckUpOrDownButton() == config.BTN_UP{
-			orderTaken, _, _ := converter.ConvertDirAndFloorToMapIndex(floor, direction)
+			orderTaken, _, _ = converter.ConvertDirAndFloorToMapIndex(floor, direction)
 			m := com.Message{com.GetMyIP(), config.NOT_ANY_BUTTON, floor, direction, reserved, orderTaken , time.Now()}
 			sendAliveMessage <- m
 		} else if queue.CheckUpOrDownButton() == config.BTN_DOWN{
-			_, orderTaken, _ := converter.ConvertDirAndFloorToMapIndex(floor, direction)
+			_, orderTaken, _ = converter.ConvertDirAndFloorToMapIndex(floor, direction)
 			m := com.Message{com.GetMyIP(), config.NOT_ANY_BUTTON, floor, direction, reserved, orderTaken , time.Now()}
 			sendAliveMessage <- m
+		} 
+		
+		if converter.ConvertButtonToFloor(io.GetElevStateReserved()) == floor{
+			if direction == config.DIR_UP && io.GetElevStateReserved() < config.DOWN_4{
+				io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
+			} else if direction == config.DIR_DOWN && io.GetElevStateReserved() < config.CMD_1 && io.GetElevStateReserved() > config.UP_3{
+				io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
+			} else if direction == config.DIR_DOWN && io.GetElevStateReserved() < config.DOWN_4{
+				io.SetElevStateReserved(config.NOT_ANY_BUTTON)
+				io.SetElevStateDir(config.DIR_UP)	
+			} else if direction == config.DIR_UP && io.GetElevStateReserved() > config.UP_3{
+				io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
+				io.SetElevStateDir(config.DIR_DOWN)
+			} 
 		}
+		
 		io.HandleWantedFloorReached()
 		queue.SynchronizeQueueWithIO(io.GetPressedButtons()) //Denne er rar, men må være her
+	}else if io.GetElevStateReserved() != config.NOT_ANY_BUTTON{
+		log.Println("GetElevStateReserved: ", io.GetElevStateReserved())
+		io.GoToNextFloor(converter.ConvertButtonToFloor(io.GetElevStateReserved()))
 	} else{
 		button, outside_button := queue.GetNextOrder()
-		io.GoToNextFloor(converter.ConvertButtonToFloor(button))
-		if outside_button == 2{
-			io.SetElevStateReserved(button)
+		log.Println("outside_button: ", outside_button)
+		if io.GetElevStateReserved() != config.NOT_ANY_BUTTON{
+		} else {
+			io.GoToNextFloor(converter.ConvertButtonToFloor(button))
+			if outside_button == 2{
+				io.SetElevStateReserved(button)
+			} 
 		}
 		log.Println("Button to  GoToNextFloor: " , converter.ConvertButtonToFloor(button))
 		log.Println("Inside eventFloorReached: NextOrder: (button, outside_button)", button, outside_button)
-
 	}
+	
 	if queue.EmptyQueue(){
 		io.SetElevStateDir(config.DIR_STOP)
+		driver.Elev_set_motor_direction(config.DIR_STOP)
 	} 
 	button, outside_button := queue.GetNextOrder()
 	log.Println("eventFloorReached: GetNextOrder:",button, outside_button)
