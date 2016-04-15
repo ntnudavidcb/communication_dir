@@ -98,12 +98,11 @@ func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 			} else if direction == config.DIR_DOWN && io.GetElevStateReserved() < config.CMD_1 && io.GetElevStateReserved() > config.UP_3{
 				io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
 			} else if direction == config.DIR_DOWN && io.GetElevStateReserved() < config.DOWN_4{
-				io.SetElevStateReserved(config.NOT_ANY_BUTTON)
-				io.SetElevStateDir(config.DIR_UP)	
+				io.SetElevStateDir(config.DIR_UP)
 			} else if direction == config.DIR_UP && io.GetElevStateReserved() > config.UP_3{
-				io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
 				io.SetElevStateDir(config.DIR_DOWN)
 			} 
+			io.SetElevStateReserved(config.NOT_ANY_BUTTON)	
 		}
 		
 		io.HandleWantedFloorReached()
@@ -116,10 +115,13 @@ func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 		log.Println("outside_button: ", outside_button)
 		if io.GetElevStateReserved() != config.NOT_ANY_BUTTON{
 		} else {
-			io.GoToNextFloor(converter.ConvertButtonToFloor(button))
 			if outside_button == 2{
 				io.SetElevStateReserved(button)
+				m := com.Message{com.GetMyIP(), config.NOT_ANY_BUTTON, floor, direction, button, config.NOT_ANY_BUTTON , time.Now()}
+				sendAliveMessage <- m
+				time.Sleep(500 * time.Millisecond)
 			} 
+			io.GoToNextFloor(converter.ConvertButtonToFloor(button))
 		}
 		log.Println("Button to  GoToNextFloor: " , converter.ConvertButtonToFloor(button))
 		log.Println("Inside eventFloorReached: NextOrder: (button, outside_button)", button, outside_button)
@@ -131,6 +133,9 @@ func eventFloorReached(sendAliveMessage chan com.Message, timer chan bool) {
 	} 
 	button, outside_button := queue.GetNextOrder()
 	log.Println("eventFloorReached: GetNextOrder:",button, outside_button)
+	if io.GetElevStateFloor() == -1{
+		return 
+	}
 	queue.UpdateElevStateMap(com.GetMyIP(), io.GetElevStateFloor(), io.GetElevStateDir())
 	queue.UpdateQueue()
 	
