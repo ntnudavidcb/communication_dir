@@ -47,7 +47,14 @@ func inLocalQueue(buttonPressed int) bool {
 }
 
 func AddButtonToQueue(buttonPressed int) {
+	if inLocalQueue(buttonPressed){
+		return
+	}
 	localQueue[buttonPressed] = true
+	//sync lys for alle heiser
+	//if CheckUpOrDownButton() == config.BTN_COMMAND{
+	//	takeBackup <- true
+	//}
 }
 
 func UpdateQueue() {
@@ -77,6 +84,7 @@ func InitQueue(){
 	for i := 0; i < 10; i++ {
 		sortedQueue[i] = -1
 	}
+	log.Println(config.ColG, "InitQueue: localQueue: ", localQueue)
 }
 
 //Rar funksjon
@@ -106,8 +114,8 @@ func GetNextOrder() (int, int) {
 	return -1, -1
 }
 
-func UpdateElevStateMap(name string, floor int, direction int){
-	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction}
+func UpdateElevStateMap(name string, floor int, direction int, reserved int){
+	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction, reserved}
 	log.Println(config.ColB, "UpdateElevStateMap: (name, floor, direction): ", name, floor, direction, config.ColN)
 }
 

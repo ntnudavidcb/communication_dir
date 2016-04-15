@@ -28,12 +28,19 @@ const (
 type ElevState struct {
 	Floor int
 	Direction int
+	Reserved int
 }
 
 var ElevStateMap = make(map[string]ElevState) //string = IP
 var MyIP string
 
 const MIN_COST int = 0
+
+func DelElevStateMap(){
+	for key, _ := range ElevStateMap{
+		delete(ElevStateMap, key)
+	}
+}
 
 func minIntegerFunc(integer1 int, integer2 int) int {
 	if integer1 < integer2 {
@@ -44,6 +51,7 @@ func minIntegerFunc(integer1 int, integer2 int) int {
 }
 
 func LowestCostElevator(button int) (bool, int) {
+	log.Println("button, ElevStateMap", button, ElevStateMap)
 	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 || len(ElevStateMap) == 0{
 		return true, CMD_BTN
 	} else {

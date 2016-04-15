@@ -37,8 +37,8 @@ func DecodeJSON(b []byte) Message {
 }
 
 //SKriver ut paa broadcast at denne maskinen lever, og sender informasjon med
-func SendMessage(msg Message){
-	udpCon := getUDPcon()
+func SendMessage(msg Message, disconnected chan bool){
+	udpCon := getUDPcon(disconnected)
 	defer udpCon.Close()
 	udpCon.Write(CreateJSON(msg))
 }

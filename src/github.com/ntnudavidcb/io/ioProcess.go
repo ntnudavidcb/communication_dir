@@ -30,14 +30,14 @@ var elevState struct {
 //Prøve å gjøre denne privat
 var PressedButtons = make(map[int]bool)
 
+var takeBackup = make(chan bool, 10)
+
 func ReadAllButtons(buttonPressed chan int) {
-	for i := 0; i < 10; i++ {
-		PressedButtons[i] = false
-	}
+	//for i := 0; i < 10; i++ {
+	//	PressedButtons[i] = false
+	//}
+	
 	for {
-		//log.Println("PressedButtons: ", PressedButtons)
-		//log.Println("ElevState: (floor, dir): ", elevState.floor, elevState.direction)
-		//log.Println("Local queue: ", PressedButtons)
 		if driver.Elev_get_button_signal(config.BTN_COMMAND, config.FLOOR_1) {
 			driver.Elev_set_button_lamp(config.BTN_COMMAND, config.FLOOR_1, 1)
 			PressedButtons[6] = true
@@ -78,12 +78,16 @@ func ReadAllButtons(buttonPressed chan int) {
 			driver.Elev_set_button_lamp(config.BTN_DOWN, config.FLOOR_2, 1)
 			PressedButtons[5] = true
 			buttonPressed <- 5
+		} else {
+			continue
 		}
+		takeBackup <- true
+		time.Sleep(100*time.Millisecond)
 	}
 }
 
-func SetPressedButton(button int){
-	PressedButtons[button] = true
+func SetPressedButton(button int, value bool){
+	PressedButtons[button] = value
 }
 
 func SetElevState(floor int, direction int, reserved int) {
@@ -121,11 +125,26 @@ func TurnOffLight() { //elevState *ElevState
 	}
 }
 
+func UpdateLightsWithRecievedMessage(floor int, direction int){
+	if direction == config.DIR_UP {
+		driver.Elev_set_button_lamp(config.BTN_UP, floor, 0)	
+		if floor == config.FLOOR_4 {
+			driver.Elev_set_button_lamp(config.BTN_DOWN, floor, 0)
+		}
+	} else if direction == config.DIR_DOWN {
+		driver.Elev_set_button_lamp(config.BTN_DOWN, floor, 0)
+		if floor == config.FLOOR_1 {
+			driver.Elev_set_button_lamp(config.BTN_UP, floor, 0)
+		}
+	}
+}
+
 func RemoveButtonFromPressedButtonList(button int){
 	if button == config.NOT_ANY_BUTTON{
 		return
 	}
 	PressedButtons[button] = false
+	takeBackup <- true
 }
 
 func RemoveFromPressedButtonList() { //elevState *ElevState,
@@ -152,6 +171,7 @@ func RemoveFromPressedButtonList() { //elevState *ElevState,
 			PressedButtons[buttonCMD] = false
 		}
 	}
+	takeBackup <- true
 }
 
 func FloorSignalListener(floorReached chan bool) {
@@ -160,6 +180,7 @@ func FloorSignalListener(floorReached chan bool) {
 			elevState.floor = driver.Elev_get_floor_sensor_signal()
 			floorReached <- true
 		}
+		time.Sleep(100*time.Millisecond)
 	}
 }
 
@@ -235,4 +256,13 @@ func HandleWantedFloorReached() {
 
 func GetPressedButtons() map[int]bool {
 	return PressedButtons
+}
+
+func isEmptyMap(buttonMap map[int]bool) bool {
+	for _, order := range buttonMap {
+		if order {
+			return false
+		}
+	}
+	return true
 }

@@ -16,6 +16,10 @@ func GetMyIP() string {
 }
 
 func GetBIP(MyIP string) string {
+	log.Println("GetBIP: ", MyIP)
+	if len(MyIP) < 5{
+		return ""
+	}
 	IP := strings.Split(MyIP, ".")
 	return IP[0] + "." + IP[1] + "." + IP[2] + ".255"
 }
