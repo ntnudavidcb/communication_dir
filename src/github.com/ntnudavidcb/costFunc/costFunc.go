@@ -1,43 +1,25 @@
 package costFunc
 
 import (
-	"../config"
+	. "../config"
 	"log"
 	"strconv"
 	"strings"
 )
 
-const (
-	UP_1   = 0
-	UP_2   = 1
-	UP_3   = 2
-	DOWN_4 = 3
-	DOWN_3 = 4
-	DOWN_2 = 5
-	CMD_1  = 6
-	CMD_2  = 7
-	CMD_3  = 8
-	CMD_4  = 9
-)
-
-const (
-	CMD_BTN = 1
-	OUTSIDE_BTN = 2
-)
-
 type ElevState struct {
-	Floor int
+	Floor     int
 	Direction int
-	Reserved int
+	Reserved  int
 }
 
-var ElevStateMap = make(map[string]ElevState) //string = IP
+var ElevStateMap = make(map[string]ElevState)
 var MyIP string
 
 const MIN_COST int = 0
 
-func DelElevStateMap(){
-	for key, _ := range ElevStateMap{
+func DelElevStateMap() {
+	for key, _ := range ElevStateMap {
 		delete(ElevStateMap, key)
 	}
 }
@@ -51,38 +33,43 @@ func minIntegerFunc(integer1 int, integer2 int) int {
 }
 
 func LowestCostElevator(button int) (bool, int) {
+	if button > CMD_4 && button < NOT_ANY_BUTTON {
+		Restart.Run()
+		log.Fatal("LowestCostElevator recieved wrong input, button: ", button)
+	}
+
 	log.Println("button, ElevStateMap", button, ElevStateMap)
-	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 || len(ElevStateMap) == 0{
+	if button == CMD_1 || button == CMD_2 || button == CMD_3 || button == CMD_4 || len(ElevStateMap) == 0 {
 		return true, CMD_BTN
 	} else {
 		smallestIPStruct := ElevStateMap[MyIP]
 		smallestIPList := []string{}
-		for IPs, elevState := range ElevStateMap{
-			if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) > CostFunc(elevState.Direction, elevState.Floor, button){
+		for IPs, elevState := range ElevStateMap {
+			if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) > CostFunc(elevState.Direction, elevState.Floor, button) {
 				smallestIPStruct = elevState
 				smallestIPList = []string{IPs}
 			} else if len(smallestIPList) == 0 {
 				smallestIPList = append(smallestIPList, IPs)
-			} else if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) == CostFunc(elevState.Direction, elevState.Floor, button){
+			} else if CostFunc(smallestIPStruct.Direction, smallestIPStruct.Floor, button) == CostFunc(elevState.Direction, elevState.Floor, button) {
 				smallestIPList = append(smallestIPList, IPs)
-			} 
+			}
 		}
-		if len(smallestIPList) == 1 && smallestIPList[0] == MyIP{
+		if len(smallestIPList) == 1 && smallestIPList[0] == MyIP {
 			return true, OUTSIDE_BTN
-		} else if len(smallestIPList) == 1{
+		} else if len(smallestIPList) == 1 {
 			return false, -1
 		}
 		smallestIP := smallestIPList[0]
 		for i, _ := range smallestIPList {
 			str1, _ := strconv.Atoi(strings.Split(smallestIP, ".")[3])
 			str2, _ := strconv.Atoi(strings.Split(smallestIPList[i], ".")[3])
-			if str1 > str2{
+			if str1 > str2 {
 				smallestIP = smallestIPList[i]
 			}
 		}
-		if smallestIP == MyIP{
+		if smallestIP == MyIP {
 			return true, OUTSIDE_BTN
-		} else{
+		} else {
 			return false, -1
 		}
 	}
@@ -98,9 +85,11 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		[]int{2, 3, 4, 5, 0, 1},
 		[]int{1, 2, 3, 4, 5, 0},
 	}
-	//log.Println("currentDir: ", currentDir)
-	//log.Println("currentFloor: ", currentFloor)
-	//log.Println("button: ", button)
+	log.Println("ElevStateMap: ", ElevStateMap)
+	if button > CMD_4 && button < NOT_ANY_BUTTON && currentFloor < FLOOR_1 && currentFloor > FLOOR_4 {
+		Restart.Run()
+		log.Fatal("CostFunc recieved wrong input, currentDir, currentFloor, button: ", currentDir, currentFloor, button)
+	}
 
 	//Button equivalents if Direction is MOVING
 	buttonEquivalent := button
@@ -110,42 +99,42 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		buttonEquivalent = DOWN_4
 	}
 
-	if currentDir == config.DIR_UP {
+	if currentDir == DIR_UP {
 		if button == CMD_2 {
 			return costMap[currentFloor][minIntegerFunc(UP_2, DOWN_2)]
 		} else if button == CMD_3 {
 			return costMap[currentFloor][minIntegerFunc(UP_3, DOWN_3)]
 		}
 		return costMap[currentFloor][buttonEquivalent]
-	} else if currentDir == config.DIR_DOWN {
-		if currentFloor == config.FLOOR_1 {
+	} else if currentDir == DIR_DOWN {
+		if currentFloor == FLOOR_1 {
 			if button == CMD_2 {
 				return costMap[currentFloor][minIntegerFunc(UP_2, DOWN_2)]
 			} else if button == CMD_3 {
 				return costMap[currentFloor][minIntegerFunc(UP_3, DOWN_3)]
 			}
-			return costMap[config.FLOOR_1][buttonEquivalent]
-		} else if currentFloor == config.FLOOR_2 {
+			return costMap[FLOOR_1][buttonEquivalent]
+		} else if currentFloor == FLOOR_2 {
 			if button == CMD_2 {
-				return costMap[5][minIntegerFunc(UP_2, DOWN_2)]
+				return costMap[DOWN_2][minIntegerFunc(UP_2, DOWN_2)]
 			} else if button == CMD_3 {
-				return costMap[5][minIntegerFunc(UP_3, DOWN_3)]
+				return costMap[DOWN_2][minIntegerFunc(UP_3, DOWN_3)]
 			}
-			return costMap[5][buttonEquivalent]
-		} else if currentFloor == config.FLOOR_3 {
+			return costMap[DOWN_2][buttonEquivalent]
+		} else if currentFloor == FLOOR_3 {
 			if button == CMD_2 {
-				return costMap[4][minIntegerFunc(UP_2, DOWN_2)]
+				return costMap[DOWN_3][minIntegerFunc(UP_2, DOWN_2)]
 			} else if button == CMD_3 {
-				return costMap[4][minIntegerFunc(UP_3, DOWN_3)]
+				return costMap[DOWN_3][minIntegerFunc(UP_3, DOWN_3)]
 			}
-			return costMap[4][buttonEquivalent]
-		} else if currentFloor == config.FLOOR_4 {
+			return costMap[DOWN_3][buttonEquivalent]
+		} else if currentFloor == FLOOR_4 {
 			if button == CMD_2 {
-				return costMap[config.FLOOR_4][minIntegerFunc(UP_2, DOWN_2)]
+				return costMap[FLOOR_4][minIntegerFunc(UP_2, DOWN_2)]
 			} else if button == CMD_3 {
-				return costMap[config.FLOOR_4][minIntegerFunc(UP_3, DOWN_3)]
+				return costMap[FLOOR_4][minIntegerFunc(UP_3, DOWN_3)]
 			}
-			return costMap[config.FLOOR_4][buttonEquivalent]
+			return costMap[FLOOR_4][buttonEquivalent]
 		}
 	}
 
@@ -156,26 +145,26 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		buttonEquivalent = UP_3
 	}
 
-	if currentDir == config.DIR_STOP {
-		if currentFloor == config.FLOOR_1 {
+	if currentDir == DIR_STOP {
+		if currentFloor == FLOOR_1 {
 			if currentFloor < buttonEquivalent {
 				return buttonEquivalent - currentFloor
 			} else {
 				return currentFloor - buttonEquivalent
 			}
-		} else if currentFloor == config.FLOOR_2 {
+		} else if currentFloor == FLOOR_2 {
 			if currentFloor < buttonEquivalent {
 				return buttonEquivalent - currentFloor
 			} else {
 				return currentFloor - buttonEquivalent
 			}
-		} else if currentFloor == config.FLOOR_3 {
+		} else if currentFloor == FLOOR_3 {
 			if currentFloor < buttonEquivalent {
 				return buttonEquivalent - currentFloor
 			} else {
 				return currentFloor - buttonEquivalent
 			}
-		} else if currentFloor == config.FLOOR_4 {
+		} else if currentFloor == FLOOR_4 {
 			if currentFloor < buttonEquivalent {
 				return buttonEquivalent - currentFloor
 			} else {
@@ -184,6 +173,8 @@ func CostFunc(currentDir int, currentFloor int, button int) int {
 		}
 	}
 	//If everything goes wrong
-	log.Println("CostFunc not working correctly")
+	Restart.Run()
+	log.Fatal("CostFunc not working correctly")
+
 	return 1000
 }

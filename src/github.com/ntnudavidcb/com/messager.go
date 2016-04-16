@@ -8,13 +8,13 @@ import (
 )
 
 type Message struct {
-	Name string			//IP
-	ButtonPushed int	
-	Floor int			
-	Direction int		
-	Reserved int
-	OrderTaken int		
-	Time time.Time
+	Name         string //IP
+	ButtonPushed int
+	Floor        int
+	Direction    int
+	Reserved     int
+	OrderTaken   int
+	Time         time.Time
 }
 
 func CreateJSON(msg Message) []byte {
@@ -37,9 +37,8 @@ func DecodeJSON(b []byte) Message {
 }
 
 //SKriver ut paa broadcast at denne maskinen lever, og sender informasjon med
-func SendMessage(msg Message, disconnected chan bool){
+func SendMessage(msg Message, disconnected chan bool) {
 	udpCon := getUDPcon(disconnected)
 	defer udpCon.Close()
 	udpCon.Write(CreateJSON(msg))
 }
-

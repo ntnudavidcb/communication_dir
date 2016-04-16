@@ -1,10 +1,10 @@
 package queue
 
 import (
-	"../costFunc"
+	. "../config"
 	"../converter"
+	"../costFunc"
 	"log"
-	"../config"
 )
 
 var localQueue = [10]bool{}
@@ -12,11 +12,7 @@ var costQueue = [10]int{}
 var dummyLocalQueue = [10]bool{}
 var sortedQueue = [10]int{}
 
-/*Organized as follows: 
-UP_1, UP_2, UP_3, DOWN_4, DOWN_3, DOWN_2, 
-CMD_1, CMD_2, CMD_3,CMD_4*/
-
-func SetMyIP(IP string){
+func SetMyIP(IP string) {
 	costFunc.MyIP = IP
 }
 
@@ -27,34 +23,30 @@ func CheckOrder(floor int, direction int) bool {
 	return inLocalQueue(buttonUp) || inLocalQueue(buttonDown) || inLocalQueue(buttonCMD)
 }
 
-func CheckUpOrDownButton() int{
+func CheckUpOrDownButton() int {
 	buttonUp, buttonDown, _ := converter.ConvertDirAndFloorToMapIndex(costFunc.ElevStateMap[costFunc.MyIP].Floor, costFunc.ElevStateMap[costFunc.MyIP].Direction)
 	log.Println("CheckUpOrDownButton: Up, down: ", buttonUp, buttonDown)
-	if inLocalQueue(buttonUp){
-		return config.BTN_UP
-	} else if inLocalQueue(buttonDown){
-		return config.BTN_DOWN
-	} else{
-		return config.BTN_COMMAND
+	if inLocalQueue(buttonUp) {
+		return BTN_UP
+	} else if inLocalQueue(buttonDown) {
+		return BTN_DOWN
+	} else {
+		return BTN_COMMAND
 	}
 }
 
 func inLocalQueue(buttonPressed int) bool {
-	if buttonPressed == -1 {
+	if buttonPressed == NOT_ANY_BUTTON {
 		return false
 	}
 	return localQueue[buttonPressed]
 }
 
 func AddButtonToQueue(buttonPressed int) {
-	if inLocalQueue(buttonPressed){
+	if inLocalQueue(buttonPressed) {
 		return
 	}
 	localQueue[buttonPressed] = true
-	//sync lys for alle heiser
-	//if CheckUpOrDownButton() == config.BTN_COMMAND{
-	//	takeBackup <- true
-	//}
 }
 
 func UpdateQueue() {
@@ -65,26 +57,24 @@ func UpdateQueue() {
 func updateCostQueue() {
 	currentFloor := costFunc.ElevStateMap[costFunc.MyIP].Floor
 	currentDir := costFunc.ElevStateMap[costFunc.MyIP].Direction
-	for button := 0; button < 10; button++ {
+	for button := UP_1; button < CMD_4+1; button++ {
 		costQueue[button] = costFunc.CostFunc(currentDir, currentFloor, button)
 	}
 }
 
-func RemoveButtonFromQueue(button int){
-	if button == config.NOT_ANY_BUTTON{
+func RemoveButtonFromQueue(button int) {
+	if button == NOT_ANY_BUTTON {
 		return
 	}
 	localQueue[button] = false
 }
 
-func InitQueue(){
-	for i := 0; i < 10; i++ {
-		costQueue[i] = -1
+func InitQueue() {
+	for button := UP_1; button < CMD_4+1; button++ {
+		costQueue[button] = NOT_ANY_BUTTON
+		sortedQueue[button] = NOT_ANY_BUTTON
 	}
-	for i := 0; i < 10; i++ {
-		sortedQueue[i] = -1
-	}
-	log.Println(config.ColG, "InitQueue: localQueue: ", localQueue)
+	log.Println(ColG, "InitQueue: localQueue: ", localQueue)
 }
 
 //Rar funksjon
@@ -94,40 +84,40 @@ func SynchronizeQueueWithIO(pressedButtons map[int]bool) {
 	}
 }
 
-func RemoveFromLocalQueue(order int){
+func RemoveFromLocalQueue(order int) {
 	localQueue[order] = false
 }
 
 func GetNextOrder() (int, int) {
-	for _, btn_states := range sortedQueue{
-		if btn_states == -1{
-			return -1, -1
+	for _, btn_states := range sortedQueue {
+		if btn_states == NOT_ANY_BUTTON {
+			return NOT_ANY_BUTTON, NOT_ANY_BUTTON
 		} else {
 			lowestCost, button := costFunc.LowestCostElevator(btn_states)
-			if lowestCost && button == costFunc.CMD_BTN{
-				return btn_states, costFunc.CMD_BTN
-			} else if lowestCost && button == costFunc.OUTSIDE_BTN {
+			if lowestCost && button == CMD_BTN {
+				return btn_states, CMD_BTN
+			} else if lowestCost && button == OUTSIDE_BTN {
 				return btn_states, button
 			}
 		}
 	}
-	return -1, -1
+	return NOT_ANY_BUTTON, NOT_ANY_BUTTON
 }
 
-func UpdateElevStateMap(name string, floor int, direction int, reserved int){
+func UpdateElevStateMap(name string, floor int, direction int, reserved int) {
 	costFunc.ElevStateMap[name] = costFunc.ElevState{floor, direction, reserved}
-	log.Println(config.ColB, "UpdateElevStateMap: (name, floor, direction): ", name, floor, direction, config.ColN)
+	log.Println(ColB, "UpdateElevStateMap: (name, floor, direction): ", name, floor, direction, ColN)
 }
 
 func sortQueue() {
 	log.Println("sortQueue: localQueue: ", localQueue)
-	minButton := config.NOT_ANY_BUTTON
-	for elem := 0; elem < config.CMD_4+1; elem++ {
+	minButton := NOT_ANY_BUTTON
+	for elem := UP_1; elem < CMD_4+1; elem++ {
 		dummyLocalQueue[elem] = localQueue[elem]
 	}
-	for i := config.UP_1; i < config.CMD_4+1; i++ {
+	for i := UP_1; i < CMD_4+1; i++ {
 		min := 100 //Setter en høy cost
-		for j := config.UP_1; j < config.CMD_4+1; j++ {
+		for j := UP_1; j < CMD_4+1; j++ {
 			if dummyLocalQueue[j] {
 				if min > costQueue[j] {
 					min = costQueue[j]
@@ -135,17 +125,17 @@ func sortQueue() {
 				}
 			}
 		}
-		if minButton != config.NOT_ANY_BUTTON {
+		if minButton != NOT_ANY_BUTTON {
 			dummyLocalQueue[minButton] = false
 		}
 		sortedQueue[i] = minButton
-		minButton = config.NOT_ANY_BUTTON
+		minButton = NOT_ANY_BUTTON
 	}
-	log.Println(config.ColC, "SortQueue; sortedQueue: ", sortedQueue, config.ColN)
+	log.Println(ColC, "SortQueue; sortedQueue: ", sortedQueue, ColN)
 }
- 
-func EmptyQueue() bool{
-	if sortedQueue[0] == -1{
+
+func EmptyQueue() bool {
+	if sortedQueue[0] == NOT_ANY_BUTTON {
 		return true
 	}
 	return false

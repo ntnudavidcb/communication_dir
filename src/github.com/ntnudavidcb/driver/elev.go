@@ -3,8 +3,7 @@ package driver
 //inspirasjon fra mortenfyhn, fiks matrix-imputs i funksjonene slik at index'ene stemmer.
 
 import (
-	def "../config"
-	"errors"
+	. "../config"
 	"log"
 	"time"
 )
@@ -14,14 +13,14 @@ import (
 type ELEV_BUTTON_TYPE int
 type ELEV_MOTOR_DIR int
 
-var lamp_channel_matrix = [def.N_FLOORS][def.N_BUTTONS]int{
+var lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
 	{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
 	{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
 	{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
 	{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
 }
 
-var button_channel_matrix = [def.N_FLOORS][def.N_BUTTONS]int{
+var button_channel_matrix = [N_FLOORS][N_BUTTONS]int{
 	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
 	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
 	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
@@ -31,71 +30,71 @@ var button_channel_matrix = [def.N_FLOORS][def.N_BUTTONS]int{
 //Initialized and descends the lift to a defined state (until the lift reaches a floor)
 func Elev_init() (int, error) {
 	if Io_init() == false {
-		return -1, errors.New("Hardware driver: ioInit() failed!")
+		Restart.Run()
+		log.Fatal("Hardware driver: ioInit() failed!")
 	}
-	for f := 0; f < def.N_FLOORS; f++ {
+	for f := 0; f < N_FLOORS; f++ {
 		if f != 0 {
-			Elev_set_button_lamp(def.BTN_DOWN, f, 0)
+			Elev_set_button_lamp(BTN_DOWN, f, OFF)
 		}
-		if f != def.N_FLOORS-1 {
-			Elev_set_button_lamp(def.BTN_UP, f, 0)
+		if f != N_FLOORS-1 {
+			Elev_set_button_lamp(BTN_UP, f, OFF)
 		}
-		Elev_set_button_lamp(def.BTN_COMMAND, f, 0)
+		Elev_set_button_lamp(BTN_COMMAND, f, OFF)
 	}
 
-	Elev_set_stop_lamp(0)
-	Elev_set_door_open_lamp(0)
+	Elev_set_stop_lamp(OFF)
+	Elev_set_door_open_lamp(OFF)
 
-	Elev_set_motor_direction(def.DIR_DOWN)
+	Elev_set_motor_direction(DIR_DOWN)
 	floor := Elev_get_floor_sensor_signal()
-	for floor == -1 {
+	for floor == NOT_ANY_FLOOR {
 		floor = Elev_get_floor_sensor_signal()
 	}
 
-	Elev_set_motor_direction(def.DIR_STOP)
+	Elev_set_motor_direction(DIR_STOP)
 	Elev_set_floor_indicator(floor)
-
-	log.Println(def.ColG, "Hardware Initialized", def.ColN)
-	time.Sleep(2 * time.Second)
+	time.Sleep(7 * time.Second)
+	log.Println(ColG, "Hardware Initialized", ColN)
 	return floor, nil
 }
 
 func Elev_set_motor_direction(dirn ELEV_MOTOR_DIR) int {
-	if dirn == 0 {
-		Io_write_analog(MOTOR, 0)
-		return 0
-	} else if dirn > 0 {
+	if dirn == DIR_STOP {
+		Io_write_analog(MOTOR, DIR_STOP)
+		return DIR_STOP
+	} else if dirn > DIR_STOP {
 		Io_clear_bit(MOTORDIR)
 		Io_write_analog(MOTOR, 2800)
-		return 1
-	} else if dirn < 0 {
+		return DIR_UP
+	} else if dirn < DIR_STOP {
 		Io_set_bit(MOTORDIR)
 		Io_write_analog(MOTOR, 2800)
-		return -1
+		return DIR_DOWN
 	}
-	return 0
+	return DIR_STOP
 }
 
 func Elev_set_button_lamp(button int, floor int, value int) {
-	if floor < 0 || floor >= def.N_FLOORS {
+	if floor < FLOOR_1 || floor >= N_FLOORS {
 		log.Printf("Error: Floor %d out of range!\n", floor)
 		return
 	}
-	if button == def.BTN_UP && floor == def.N_FLOORS-1 {
+	if button == BTN_UP && floor == N_FLOORS-1 {
 		log.Println("Button up from top floor does not exist!")
 		return
 	}
-	if button == def.BTN_DOWN && floor == 0 {
+	if button == BTN_DOWN && floor == FLOOR_1 {
 		log.Println("Button down from ground floor does not exist!")
 		return
 	}
-	if button != def.BTN_UP &&
-		button != def.BTN_DOWN &&
-		button != def.BTN_COMMAND {
+	if button != BTN_UP &&
+		button != BTN_DOWN &&
+		button != BTN_COMMAND {
 		log.Printf("Invalid button %d\n", button)
 		return
 	}
-	if value != 0 {
+	if value != OFF {
 		Io_set_bit(lamp_channel_matrix[floor][button])
 	} else {
 		Io_clear_bit(lamp_channel_matrix[floor][button])
@@ -103,7 +102,7 @@ func Elev_set_button_lamp(button int, floor int, value int) {
 }
 
 func Elev_set_floor_indicator(floor int) {
-	if floor < 0 || floor >= def.N_FLOORS {
+	if floor < FLOOR_1 || floor >= N_FLOORS {
 		log.Printf("Error: Floor %d out of range!\n", floor)
 		return
 	}
@@ -122,7 +121,7 @@ func Elev_set_floor_indicator(floor int) {
 }
 
 func Elev_set_door_open_lamp(value int) {
-	if value != 0 {
+	if value != OFF {
 		Io_set_bit(LIGHT_DOOR_OPEN)
 	} else {
 		Io_clear_bit(LIGHT_DOOR_OPEN)
@@ -130,7 +129,7 @@ func Elev_set_door_open_lamp(value int) {
 }
 
 func Elev_set_stop_lamp(value int) {
-	if value != 0 {
+	if value != OFF {
 		Io_set_bit(LIGHT_STOP)
 	} else {
 		Io_clear_bit(LIGHT_STOP)
@@ -138,19 +137,19 @@ func Elev_set_stop_lamp(value int) {
 }
 
 func Elev_get_button_signal(button int, floor int) bool {
-	if floor < 0 || floor >= def.N_FLOORS {
+	if floor < FLOOR_1 || floor >= N_FLOORS {
 		log.Printf("Error: Floor %d out of range!\n", floor)
 		return false
 	}
-	if button < 0 || button >= def.N_BUTTONS {
+	if button < 0 || button >= N_BUTTONS {
 		log.Printf("Error: Button %d out of range!\n", button)
 		return false
 	}
-	if button == def.BTN_UP && floor == def.N_FLOORS-1 {
+	if button == BTN_UP && floor == N_FLOORS-1 {
 		log.Println("Button up from top floor does not exist!")
 		return false
 	}
-	if button == def.BTN_DOWN && floor == 0 {
+	if button == BTN_DOWN && floor == FLOOR_1 {
 		log.Println("Button down from ground floor does not exist!")
 		return false
 	}
@@ -165,15 +164,15 @@ func Elev_get_button_signal(button int, floor int) bool {
 
 func Elev_get_floor_sensor_signal() int {
 	if Io_read_bit(SENSOR_FLOOR1) != 0 {
-		return 0
+		return FLOOR_1
 	} else if Io_read_bit(SENSOR_FLOOR2) != 0 {
-		return 1
+		return FLOOR_2
 	} else if Io_read_bit(SENSOR_FLOOR3) != 0 {
-		return 2
+		return FLOOR_3
 	} else if Io_read_bit(SENSOR_FLOOR4) != 0 {
-		return 3
+		return FLOOR_4
 	} else {
-		return -1
+		return NOT_ANY_FLOOR
 	}
 }
 
