@@ -21,7 +21,7 @@ func eventButtonPushed(buttonPushed int, disconnected chan bool) {
 	}
 }
 
-func eventMessageRecieved(messageStruct com.Message, timeStampMap map[string]time.Time) {
+func eventMessageRecieved(messageStruct com.Message) {
 	if messageStruct.ButtonPushed != NOT_ANY_BUTTON { //Hvis noen sier at en knapp ble trykket legges den til
 		queue.AddButtonToQueue(messageStruct.ButtonPushed)
 		io.SetPressedButton(messageStruct.ButtonPushed, true)
@@ -30,19 +30,14 @@ func eventMessageRecieved(messageStruct com.Message, timeStampMap map[string]tim
 		Restart.Run()
 		log.Fatal("eventMessageRecieved failed, messageStruct.Floor not valid.")
 	}
-	log.Println(messageStruct)
+	log.Println("eventMessageRecieved, messageStruct: ", messageStruct)
 	queue.UpdateElevStateMap(messageStruct.Name, messageStruct.Floor, messageStruct.Direction, messageStruct.Reserved)
 	queue.RemoveButtonFromQueue(messageStruct.OrderTaken)
 	queue.RemoveButtonFromQueue(messageStruct.Reserved)
 	io.RemoveButtonFromPressedButtonList(messageStruct.OrderTaken)
 	io.RemoveButtonFromPressedButtonList(messageStruct.Reserved)
 	io.UpdateLightsWithRecievedMessage(messageStruct.Floor, messageStruct.Direction)
-	IPAddrs := com.CheckDisconnection(timeStampMap, messageStruct)
-	if IPAddrs != "" {
-		reserved := costFunc.ElevStateMap[IPAddrs].Reserved
-		queue.AddButtonToQueue(reserved)
-		io.SetPressedButton(reserved, true)
-	}
+	com.UpdateIP(messageStruct.Name)
 }
 
 func eventFloorReached(engineActive chan bool, sendAliveMessage chan com.Message, timer chan bool, timedOutChan chan bool, activeDirection int, timeStamp time.Time) (int, time.Time) {
@@ -119,7 +114,13 @@ func eventFloorReached(engineActive chan bool, sendAliveMessage chan com.Message
 	log.Println("eventFloorReached: GetNextOrder:", button, outside_button)
 	queue.UpdateElevStateMap(costFunc.MyIP, io.GetElevStateFloor(), io.GetElevStateDir(), io.GetElevStateReserved())
 	queue.UpdateQueue()
-
+	IPAddrs := com.CheckForDisconnect()
+	if IPAddrs != "" {
+		reserved := costFunc.ElevStateMap[IPAddrs].Reserved
+		delete(costFunc.ElevStateMap, IPAddrs)
+		queue.AddButtonToQueue(reserved)
+		io.SetPressedButton(reserved, true)
+	}
 	return newActiveDirection, timeStamp
 	//log.Println("Inside eventFloorReached: NextOrder: (button, outside_button)", button, outside_button)
 }

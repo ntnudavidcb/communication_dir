@@ -1,6 +1,7 @@
 package com
 
 import (
+	. "../config"
 	"log"
 	"net"
 	"time"
@@ -9,6 +10,7 @@ import (
 var myBIP string
 var myIP string
 var port string
+var timeStampMap = make(map[string]time.Time) //Holde styr pa timestamps paa IP adressene som blir sendt inn
 
 //Kjorer hele tiden, holder hele nettverkssystemet oppe og styrer hele showet
 func Server(ipListChannel chan []string, sendAliveMessage chan Message, msgRecievedChan chan Message, disconnected chan bool) {
@@ -67,7 +69,7 @@ func connListener(msgRecievedChan chan Message, disconnected chan bool) {
 }
 
 //Oppdaterer IP-listen med den IP'en som sendes inn
-func updateIP(timeStampMap map[string]time.Time, IPAddr string) {
+func UpdateIP(IPAddr string) {
 	timeStampMap[IPAddr] = time.Now().Add(6 * time.Second)
 }
 
@@ -76,7 +78,6 @@ func timeStampCheck(timeStampMap map[string]time.Time) string {
 	for key, val := range timeStampMap {
 		if val.Before(time.Now()) {
 			log.Println("Found disconnect")
-
 			delete(timeStampMap, key)
 			return key
 		}
@@ -125,8 +126,13 @@ func getUDPcon(disconnected chan bool) *net.UDPConn {
 	return con
 }
 
-func CheckDisconnection(timeStampMap map[string]time.Time, messageStruct Message) string {
-	updateIP(timeStampMap, messageStruct.Name)
-	return timeStampCheck(timeStampMap)
-	//printAliveList(timeStampMap)
+func CheckForDisconnect() string {
+	for key, val := range timeStampMap {
+		if val.Before(time.Now()) { //Disconnected
+			log.Println(ColB, "Elevator with IP ", key, " disconnected from the network or might be stuck between floors.", ColN)
+			delete(timeStampMap, key)
+			return key
+		}
+	}
+	return ""
 }

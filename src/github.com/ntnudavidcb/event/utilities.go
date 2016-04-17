@@ -2,7 +2,7 @@ package event
 
 import (
 	"../com"
-	"../config"
+	. "../config"
 	"../driver"
 	"log"
 	"os"
@@ -14,8 +14,8 @@ func SafeKill() {
 	var c = make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 	<-c
-	driver.Elev_set_motor_direction(config.DIR_STOP)
-	log.Fatal(config.ColR, "User terminated program.", config.ColN)
+	driver.Elev_set_motor_direction(DIR_STOP)
+	log.Fatal(ColR, "User terminated program.", ColN)
 }
 
 //TRÅDENE------------------------------------------------------------------
@@ -29,6 +29,11 @@ func TimedOut(timerChan chan bool) {
 	timerChan <- true
 }
 
+func timeFloor(timedOutFloor chan bool) {
+	time.Sleep(6 * time.Second)
+	timedOutFloor <- true
+}
+
 func ButtonPushedHandler(buttonPressed chan int, disconnected chan bool) {
 	for {
 		varButtonPressed := <-buttonPressed
@@ -37,11 +42,11 @@ func ButtonPushedHandler(buttonPressed chan int, disconnected chan bool) {
 	}
 }
 
-func MsgRecievedHandler(messageRecieved chan com.Message, timeStampMap map[string]time.Time) {
+func MsgRecievedHandler(messageRecieved chan com.Message) {
 	for {
 		msg := <-messageRecieved
 		log.Println("Message recieved")
-		eventMessageRecieved(msg, timeStampMap)
+		eventMessageRecieved(msg)
 		time.Sleep(10 * time.Millisecond)
 	}
 }
@@ -49,13 +54,21 @@ func MsgRecievedHandler(messageRecieved chan com.Message, timeStampMap map[strin
 func FloorReachedHandler(floorReached chan bool, timer chan bool, sendAliveMessage chan com.Message) {
 	timedOutChan := make(chan bool, 1)
 	engineActive := make(chan bool)
-	activeDirection := config.DIR_STOP
+	timedOutFloor := make(chan bool, 1)
+	activeDirection := DIR_STOP
 	timeStamp := time.Now()
 	for {
-		<-floorReached
+		select {
+		case <-floorReached:
+			break
+		case <-timedOutFloor:
+			break
+		default:
+			break
+		}
 		activeDirection, timeStamp = eventFloorReached(engineActive, sendAliveMessage, timer, timedOutChan, activeDirection, timeStamp)
 		if timeStamp.Before(time.Now()) {
-			config.Restart.Run()
+			Restart.Run()
 			log.Fatal("Not any action taken for too long, engine might not work.")
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -65,6 +78,7 @@ func FloorReachedHandler(floorReached chan bool, timer chan bool, sendAliveMessa
 func HandleDisconnnect(disconnected chan bool, ipListChannel chan []string, sendAliveMessage chan com.Message, messageRecieved chan com.Message) {
 	for {
 		<-disconnected
+		log.Println(ColR, "Disconnected from the network.", ColN)
 		eventDisconnect(disconnected, ipListChannel, sendAliveMessage, messageRecieved)
 		time.Sleep(10 * time.Millisecond)
 	}

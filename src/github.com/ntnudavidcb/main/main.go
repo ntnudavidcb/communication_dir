@@ -10,12 +10,10 @@ import (
 	. "../event"
 	"../io"
 	"log"
-	"time"
 )
 
 func main() {
 	ipListChannel := make(chan []string)
-	timeStampMap := make(map[string]time.Time) //Holde styr pa timestamps paa IP adressene som blir sendt inn
 	timer := make(chan bool, 1)
 	floorReached := make(chan bool, 1)
 	buttonPushed := make(chan int, 1)
@@ -32,7 +30,7 @@ func main() {
 	go io.FloorSignalListener(floorReached)
 	go TimerCount(timer)
 	go ButtonPushedHandler(buttonPushed, disconnected)
-	go MsgRecievedHandler(messageRecieved, timeStampMap)
+	go MsgRecievedHandler(messageRecieved)
 	go FloorReachedHandler(floorReached, timer, sendAliveMessage)
 	go HandleDisconnnect(disconnected, ipListChannel, sendAliveMessage, messageRecieved)
 	go SafeKill() //If user ends the program ( CTRL + C )
